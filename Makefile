@@ -1,0 +1,114 @@
+GO ?= go
+BINARY := bin/adhcl
+EXAMPLES := $(wildcard examples/*.em.hcl) $(patsubst %/,%,$(wildcard examples/*/))
+# MODEL is one .em.hcl file or one folder model. adhcl selects the member
+# files of a folder.
+MODEL ?=
+WASM_DIR := web/playground
+
+.DEFAULT_GOAL := help
+
+.PHONY: help build test test-race vet fmt-check tidy-check staticcheck exhaustive vulncheck validate-examples examples-fmt-check model-fmt-check model-valid model-ready build-wasm wasm-check release-tag-check release-annotation-check release-version-check verify clean
+
+help: ## List available commands.
+	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "%-18s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
+
+build: $(BINARY) ## Build the validator into bin/.
+
+$(BINARY): $(shell find cmd internal -type f -name '*.go') go.mod go.sum
+	@mkdir -p $(@D)
+	$(GO) build -o $@ ./cmd/adhcl
+
+test: ## Run unit and fixture tests.
+	$(GO) test ./...
+
+test-race: ## Run tests with the race detector.
+	$(GO) test -race ./...
+
+vet: ## Run go vet.
+	$(GO) vet ./...
+
+fmt-check: ## Fail if tracked Go files are not gofmt-formatted.
+	@unformatted=$$(git ls-files -co --exclude-standard '*.go' | while read -r file; do \
+		test ! -f "$$file" || $(GO)fmt -l "$$file"; \
+	done); \
+	test -z "$$unformatted"
+
+tidy-check: ## Fail if go.mod or go.sum need tidying.
+	$(GO) mod tidy
+	git diff --exit-code -- go.mod go.sum
+
+staticcheck: ## Run Staticcheck (downloads its CI-pinned version if needed).
+	$(GO) run honnef.co/go/tools/cmd/staticcheck@2026.1 ./...
+
+exhaustive: ## Check switch-statement exhaustiveness over local enum types.
+	$(GO) tool exhaustive -default-signifies-exhaustive=false ./...
+
+vulncheck: ## Run the Go vulnerability checker.
+	$(GO) run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
+
+validate-examples: build ## Validate every shipped Event Modeling example.
+	@for model in $(EXAMPLES); do \
+		$(BINARY) validate "$$model" || exit $$?; \
+	done
+
+examples-fmt-check: build ## Fail if a shipped example file is not adhcl-formatted.
+	@for model in $(EXAMPLES); do \
+		$(BINARY) fmt --check "$$model" || { echo "Run: adhcl fmt -w $$model" >&2; exit 1; }; \
+	done
+
+# Model gates for MODEL=<model.em.hcl | folder>. Each target needs the one
+# before it: model-ready <- model-valid <- model-fmt-check <- build.
+model-fmt-check: build ## Fail if a member file of MODEL is not adhcl-formatted.
+	@test -n "$(MODEL)" || { echo "usage: make $@ MODEL=<model.em.hcl | folder>" >&2; exit 2; }
+	@$(BINARY) fmt --check "$(MODEL)" || { echo "Run: adhcl fmt -w $(MODEL)" >&2; exit 1; }
+
+model-valid: model-fmt-check ## Validate MODEL with the default (valid) profile.
+	$(BINARY) validate "$(MODEL)"
+
+model-ready: model-valid ## Validate MODEL with the strict profile: the implementation-ready gate.
+	$(BINARY) validate --profile strict "$(MODEL)"
+
+build-wasm: ## Build the WebAssembly playground module into web/playground/.
+	@mkdir -p $(WASM_DIR)
+	$(GO) run ./cmd/playground-seed examples/minimal.em.hcl > $(WASM_DIR)/seed.js
+	GOOS=js GOARCH=wasm $(GO) build -o $(WASM_DIR)/adhcl.wasm ./cmd/wasm
+	@wasm_exec="$$($(GO) env GOROOT)/lib/wasm/wasm_exec.js"; \
+	if [ ! -f "$$wasm_exec" ]; then wasm_exec="$$($(GO) env GOROOT)/misc/wasm/wasm_exec.js"; fi; \
+	if [ ! -f "$$wasm_exec" ]; then \
+		echo "wasm_exec.js not found under GOROOT (checked lib/wasm and misc/wasm)" >&2; \
+		exit 1; \
+	fi; \
+	cp "$$wasm_exec" $(WASM_DIR)/wasm_exec.js
+	@ls -lh $(WASM_DIR)/adhcl.wasm $(WASM_DIR)/wasm_exec.js
+
+wasm-check: ## Verify the WebAssembly module still compiles for js/wasm.
+	@temporary=$$(mktemp -d); \
+	trap 'rm -rf "$$temporary"' EXIT; \
+	GOOS=js GOARCH=wasm $(GO) build -o "$$temporary/adhcl.wasm" ./cmd/wasm
+
+release-tag-check: ## Test the stable semantic-version tag validator.
+	sh scripts/test-require-stable-tag.sh
+
+release-annotation-check: ## Test annotated-tag verification from a tagless checkout.
+	sh scripts/test-require-annotated-tag.sh
+
+release-version-check: ## Verify the linker-injected release version is reported by adhcl.
+	@temporary=$$(mktemp -d); \
+	trap 'rm -rf "$$temporary"' EXIT; \
+	$(GO) build -ldflags '-X main.buildVersion=v0.18.0' -o "$$temporary/adhcl" ./cmd/adhcl; \
+	test "$$($$temporary/adhcl version)" = 'adhcl v0.18.0'
+
+verify: fmt-check tidy-check vet test test-race staticcheck exhaustive vulncheck validate-examples examples-fmt-check wasm-check release-tag-check release-annotation-check release-version-check ## Run the complete local verification suite.
+
+clean: ## Remove locally built artifacts.
+	rm -rf bin dist $(WASM_DIR)/adhcl.wasm $(WASM_DIR)/wasm_exec.js $(WASM_DIR)/seed.js
+
+# -- pre-commit --
+.PHONY: pre-commit-install pre-commit-run
+
+pre-commit-install: ## Install the repository pre-commit hook.
+	pre-commit install
+
+pre-commit-run: ## Run all repository pre-commit hooks.
+	pre-commit run --all-files
