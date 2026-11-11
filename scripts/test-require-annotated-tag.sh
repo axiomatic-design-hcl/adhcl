@@ -15,8 +15,8 @@ git init --bare --initial-branch main "$origin" >/dev/null
 git init --initial-branch main "$source" >/dev/null
 git -C "$source" config user.email release-test@example.invalid
 git -C "$source" config user.name "Release Test"
-touch "$source/model.em.hcl"
-git -C "$source" add model.em.hcl
+touch "$source/model.ad.hcl"
+git -C "$source" add model.ad.hcl
 git -C "$source" commit -m "Initial model" >/dev/null
 git -C "$source" remote add origin "$origin"
 git -C "$source" push origin main >/dev/null 2>&1

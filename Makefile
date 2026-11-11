@@ -1,7 +1,7 @@
 GO ?= go
 BINARY := bin/adhcl
-EXAMPLES := $(wildcard examples/*.em.hcl) $(patsubst %/,%,$(wildcard examples/*/))
-# MODEL is one .em.hcl file or one folder model. adhcl selects the member
+EXAMPLES := $(wildcard examples/*.ad.hcl) $(patsubst %/,%,$(wildcard examples/*/))
+# MODEL is one .ad.hcl file or one folder model. adhcl selects the member
 # files of a folder.
 MODEL ?=
 WASM_DIR := web/playground
@@ -47,7 +47,7 @@ exhaustive: ## Check switch-statement exhaustiveness over local enum types.
 vulncheck: ## Run the Go vulnerability checker.
 	$(GO) run golang.org/x/vuln/cmd/govulncheck@v1.1.4 ./...
 
-validate-examples: build ## Validate every shipped Event Modeling example.
+validate-examples: build ## Validate every shipped Axiomatic Design example.
 	@for model in $(EXAMPLES); do \
 		$(BINARY) validate "$$model" || exit $$?; \
 	done
@@ -57,10 +57,10 @@ examples-fmt-check: build ## Fail if a shipped example file is not adhcl-formatt
 		$(BINARY) fmt --check "$$model" || { echo "Run: adhcl fmt -w $$model" >&2; exit 1; }; \
 	done
 
-# Model gates for MODEL=<model.em.hcl | folder>. Each target needs the one
+# Model gates for MODEL=<model.ad.hcl | folder>. Each target needs the one
 # before it: model-ready <- model-valid <- model-fmt-check <- build.
 model-fmt-check: build ## Fail if a member file of MODEL is not adhcl-formatted.
-	@test -n "$(MODEL)" || { echo "usage: make $@ MODEL=<model.em.hcl | folder>" >&2; exit 2; }
+	@test -n "$(MODEL)" || { echo "usage: make $@ MODEL=<model.ad.hcl | folder>" >&2; exit 2; }
 	@$(BINARY) fmt --check "$(MODEL)" || { echo "Run: adhcl fmt -w $(MODEL)" >&2; exit 1; }
 
 model-valid: model-fmt-check ## Validate MODEL with the default (valid) profile.
@@ -71,7 +71,7 @@ model-ready: model-valid ## Validate MODEL with the strict profile: the implemen
 
 build-wasm: ## Build the WebAssembly playground module into web/playground/.
 	@mkdir -p $(WASM_DIR)
-	$(GO) run ./cmd/playground-seed examples/minimal.em.hcl > $(WASM_DIR)/seed.js
+	$(GO) run ./cmd/playground-seed examples/minimal.ad.hcl > $(WASM_DIR)/seed.js
 	GOOS=js GOARCH=wasm $(GO) build -o $(WASM_DIR)/adhcl.wasm ./cmd/wasm
 	@wasm_exec="$$($(GO) env GOROOT)/lib/wasm/wasm_exec.js"; \
 	if [ ! -f "$$wasm_exec" ]; then wasm_exec="$$($(GO) env GOROOT)/misc/wasm/wasm_exec.js"; fi; \

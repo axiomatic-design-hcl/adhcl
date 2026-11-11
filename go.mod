@@ -1,4 +1,4 @@
-module github.com/event-modeling-hcl/eventmodeling-hcl
+module github.com/axiomatic-design-hcl/adhcl
 
 go 1.25.0
 

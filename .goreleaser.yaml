@@ -40,5 +40,5 @@ changelog:
 
 release:
   github:
-    owner: event-modeling-hcl
-    name: eventmodeling-hcl
+    owner: axiomatic-design-hcl
+    name: adhcl

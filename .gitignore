@@ -29,7 +29,7 @@ dist/
 /web/playground/wasm_exec.js
 /web/playground/seed.js
 
-# Local Event Model diagram previews
+# Local diagram previews
 /site*.html
 
 # Dependency directories (remove the comment below to include it)
