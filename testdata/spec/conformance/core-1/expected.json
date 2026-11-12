@@ -1,0 +1,575 @@
+{
+  "format": "requirements_hcl/conformance/1",
+  "language": "requirements_hcl/core/1",
+  "status": "acceptance_expectations_not_measured_results",
+  "authorities": {
+    "fields": "../../docs/schema.md",
+    "assessment": "../../docs/assessment-contract.md",
+    "diagnostics": "../../docs/diagnostics.md"
+  },
+  "environment": {
+    "operation": "validate",
+    "profiles": [
+      "source",
+      "architecture"
+    ],
+    "trusted_registry": [
+      "terraform_binding",
+      "event_model_link",
+      "html_view"
+    ],
+    "external_observations": "unavailable",
+    "external_behavior_revisions": "unavailable",
+    "reviewed_support_import": "unavailable",
+    "text_delivery": "available"
+  },
+  "cases": [
+    {
+      "id": "baseline",
+      "input": "base.ad.hcl",
+      "native_parse": "success",
+      "expected": {
+        "stages": {
+          "core_assessment": "complete",
+          "owners": "not_requested",
+          "composition": "complete",
+          "text_rendering": "complete",
+          "html_rendering": "not_requested"
+        },
+        "operation": {
+          "source": "success",
+          "architecture": "success"
+        },
+        "conditional_classification": "uncoupled",
+        "supported_independence": "unresolved",
+        "required_findings": [
+          {
+            "code": "support_gap",
+            "severity": {
+              "source": "warning",
+              "architecture": "warning"
+            }
+          }
+        ],
+        "permitted_additional_codes": [
+          "support_gap",
+          "unresolved_feasibility"
+        ],
+        "other_codes": "forbidden",
+        "scope": "design.two_outputs",
+        "pairing": {
+          "fr.left": "dp.left_output",
+          "fr.right": "dp.right_output"
+        },
+        "matrix": {
+          "fr.left": {
+            "dp.left_output": "material",
+            "dp.right_output": "none"
+          },
+          "fr.right": {
+            "dp.left_output": "none",
+            "dp.right_output": "material"
+          }
+        }
+      }
+    },
+    {
+      "id": "invalid_schema",
+      "input": "invalid-schema.ad.project.hcl",
+      "native_parse": "success",
+      "expected": {
+        "stages": {
+          "core_assessment": "blocked",
+          "owners": "not_requested",
+          "composition": "complete",
+          "text_rendering": "complete",
+          "html_rendering": "not_requested"
+        },
+        "operation": {
+          "source": "failure",
+          "architecture": "failure"
+        },
+        "conditional_classification": "not_assessed",
+        "required_findings": [
+          {
+            "code": "invalid_structure",
+            "severity": {
+              "source": "error",
+              "architecture": "error"
+            },
+            "at": {
+              "file": "invalid-fields.ad.hcl",
+              "block": "source.null_title",
+              "field": "title"
+            },
+            "reason": "null is not admitted"
+          },
+          {
+            "code": "invalid_structure",
+            "severity": {
+              "source": "error",
+              "architecture": "error"
+            },
+            "at": {
+              "file": "invalid-fields.ad.hcl",
+              "block": "need.unknown_field",
+              "field": "ignored_typo"
+            },
+            "reason": "unknown field"
+          },
+          {
+            "code": "invalid_structure",
+            "severity": {
+              "source": "error",
+              "architecture": "error"
+            },
+            "at": {
+              "file": "invalid-fields.ad.hcl",
+              "block": "dp.empty_controls",
+              "field": "controls"
+            },
+            "reason": "empty list violates nonempty cardinality"
+          },
+          {
+            "code": "invalid_structure",
+            "severity": {
+              "source": "error",
+              "architecture": "error"
+            },
+            "at": {
+              "file": "invalid-fields.ad.hcl",
+              "block": "scenario.string_reference",
+              "field": "verifies"
+            },
+            "reason": "a string is not a reference traversal"
+          }
+        ],
+        "permitted_additional_codes": [
+          "invalid_structure"
+        ],
+        "other_codes": "forbidden"
+      }
+    },
+    {
+      "id": "wrong_reference_kind",
+      "input": "wrong-kind.ad.project.hcl",
+      "native_parse": "success",
+      "expected": {
+        "stages": {
+          "core_assessment": "blocked",
+          "owners": "not_requested",
+          "composition": "complete",
+          "text_rendering": "complete",
+          "html_rendering": "not_requested"
+        },
+        "operation": {
+          "source": "failure",
+          "architecture": "failure"
+        },
+        "conditional_classification": "not_assessed",
+        "required_findings": [
+          {
+            "code": "invalid_reference",
+            "severity": {
+              "source": "error",
+              "architecture": "error"
+            },
+            "at": {
+              "file": "wrong-kind.ad.hcl",
+              "block": "dp.wrong_kind",
+              "field": "controls"
+            },
+            "target": "need.separate_outputs",
+            "required_target_kind": "fr"
+          }
+        ],
+        "permitted_additional_codes": [],
+        "other_codes": "forbidden"
+      }
+    },
+    {
+      "id": "cross_file_duplicate",
+      "input": "duplicate.ad.project.hcl",
+      "native_parse": "success",
+      "expected": {
+        "stages": {
+          "core_assessment": "blocked",
+          "owners": "not_requested",
+          "composition": "complete",
+          "text_rendering": "complete",
+          "html_rendering": "not_requested"
+        },
+        "operation": {
+          "source": "failure",
+          "architecture": "failure"
+        },
+        "conditional_classification": "not_assessed",
+        "required_findings": [
+          {
+            "code": "duplicate_identity",
+            "severity": {
+              "source": "error",
+              "architecture": "error"
+            },
+            "subject": "need.separate_outputs",
+            "related_files": [
+              "base.ad.hcl",
+              "duplicate.ad.hcl"
+            ]
+          }
+        ],
+        "permitted_additional_codes": [],
+        "other_codes": "forbidden"
+      }
+    },
+    {
+      "id": "exact_unknown_over_default",
+      "input": "exact-unknown.ad.project.hcl",
+      "native_parse": "success",
+      "expected": {
+        "stages": {
+          "core_assessment": "complete",
+          "owners": "not_requested",
+          "composition": "complete",
+          "text_rendering": "complete",
+          "html_rendering": "not_requested"
+        },
+        "operation": {
+          "source": "success",
+          "architecture": "failure"
+        },
+        "conditional_classification": "unresolved",
+        "supported_independence": "unresolved",
+        "required_findings": [
+          {
+            "code": "unresolved_influence",
+            "severity": {
+              "source": "warning",
+              "architecture": "error"
+            },
+            "subject": "design.two_outputs"
+          },
+          {
+            "code": "support_gap",
+            "severity": {
+              "source": "warning",
+              "architecture": "warning"
+            }
+          }
+        ],
+        "permitted_additional_codes": [
+          "support_gap",
+          "unresolved_feasibility"
+        ],
+        "other_codes": "forbidden",
+        "scope": "design.two_outputs",
+        "pairing": {
+          "fr.left": "dp.left_output",
+          "fr.right": "dp.right_output"
+        },
+        "matrix": {
+          "fr.left": {
+            "dp.left_output": "material",
+            "dp.right_output": "unknown"
+          },
+          "fr.right": {
+            "dp.left_output": "none",
+            "dp.right_output": "material"
+          }
+        },
+        "exact_unknown": {
+          "file": "exact-unknown.ad.hcl",
+          "from": "dp.right_output",
+          "to": "fr.left",
+          "default_applied": false,
+          "conflict": false
+        }
+      }
+    },
+    {
+      "id": "ambiguous_pairing",
+      "input": "ambiguous.ad.hcl",
+      "native_parse": "success",
+      "expected": {
+        "stages": {
+          "core_assessment": "complete",
+          "owners": "not_requested",
+          "composition": "complete",
+          "text_rendering": "complete",
+          "html_rendering": "not_requested"
+        },
+        "operation": {
+          "source": "failure",
+          "architecture": "failure"
+        },
+        "conditional_classification": "unresolved",
+        "supported_independence": "unresolved",
+        "required_findings": [
+          {
+            "code": "ambiguous_pairing",
+            "severity": {
+              "source": "error",
+              "architecture": "error"
+            },
+            "subject": "design.ambiguous"
+          },
+          {
+            "code": "support_gap",
+            "severity": {
+              "source": "warning",
+              "architecture": "warning"
+            }
+          }
+        ],
+        "permitted_additional_codes": [
+          "support_gap",
+          "unresolved_feasibility"
+        ],
+        "other_codes": "forbidden",
+        "scope": "design.ambiguous",
+        "selected_pairing": null,
+        "complete_pairings": [
+          {
+            "fr.first": "dp.first_control",
+            "fr.second": "dp.second_control"
+          },
+          {
+            "fr.first": "dp.second_control",
+            "fr.second": "dp.first_control"
+          }
+        ],
+        "unknown_cells": [],
+        "classification_reason": "Do not choose either complete pairing, even though all four effects are material."
+      }
+    },
+    {
+      "id": "invalid_required_attachment",
+      "input": "invalid-attachment.ad.project.hcl",
+      "native_parse": "success",
+      "expected": {
+        "stages": {
+          "core_assessment": "complete",
+          "owners": {
+            "html_view": "complete"
+          },
+          "composition": "complete",
+          "text_rendering": "complete",
+          "html_rendering": "not_requested"
+        },
+        "operation": {
+          "source": "failure",
+          "architecture": "failure"
+        },
+        "conditional_classification": "uncoupled",
+        "supported_independence": "unresolved",
+        "required_findings": [
+          {
+            "code": "invalid_attachment",
+            "severity": {
+              "source": "error",
+              "architecture": "error"
+            },
+            "at": {
+              "file": "invalid-view.ad.ext.hcl",
+              "block": "attachment.invalid_view",
+              "field": "data.show_source_locations"
+            }
+          },
+          {
+            "code": "support_gap",
+            "severity": {
+              "source": "warning",
+              "architecture": "warning"
+            }
+          }
+        ],
+        "permitted_additional_codes": [
+          "support_gap",
+          "unresolved_feasibility"
+        ],
+        "other_codes": "forbidden",
+        "scope": "design.two_outputs",
+        "owner_results": {
+          "html_view": {
+            "stage": "complete",
+            "payload_valid": false,
+            "outcomes": []
+          }
+        },
+        "core_matrix_unchanged_from": "baseline"
+      }
+    },
+    {
+      "id": "starter_core",
+      "input": "../../examples/starter/design.ad.hcl",
+      "native_parse": "success",
+      "expected": {
+        "stages": {
+          "core_assessment": "complete",
+          "owners": "not_requested",
+          "composition": "complete",
+          "text_rendering": "complete",
+          "html_rendering": "not_requested"
+        },
+        "operation": {
+          "source": "success",
+          "architecture": "success"
+        },
+        "conditional_classification": "decoupled",
+        "supported_independence": "unresolved",
+        "required_findings": [
+          {
+            "code": "support_gap",
+            "severity": {
+              "source": "warning",
+              "architecture": "warning"
+            }
+          },
+          {
+            "code": "unresolved_feasibility",
+            "severity": {
+              "source": "warning",
+              "architecture": "warning"
+            }
+          }
+        ],
+        "permitted_additional_codes": [
+          "support_gap",
+          "unresolved_feasibility"
+        ],
+        "other_codes": "forbidden",
+        "scope": "design.receipt",
+        "pairing": {
+          "fr.admit_amount": "dp.amount_admission",
+          "fr.calculate_total": "dp.exact_addition"
+        },
+        "matrix": {
+          "fr.admit_amount": {
+            "dp.amount_admission": "material",
+            "dp.exact_addition": "none"
+          },
+          "fr.calculate_total": {
+            "dp.amount_admission": "material",
+            "dp.exact_addition": "material"
+          }
+        },
+        "valid_order": [
+          "dp.amount_admission",
+          "dp.exact_addition"
+        ],
+        "feasibility": "unresolved",
+        "information": {
+          "status": "unknown",
+          "value": null
+        },
+        "implementation_conformance": "unresolved"
+      }
+    },
+    {
+      "id": "starter_project_external_unknown",
+      "input": "../../examples/starter/model.ad.project.hcl",
+      "native_parse": "success",
+      "expected": {
+        "stages": {
+          "core_assessment": "complete",
+          "owners": {
+            "terraform_binding": "complete",
+            "event_model_link": "complete",
+            "html_view": "complete"
+          },
+          "composition": "complete",
+          "text_rendering": "complete",
+          "html_rendering": "not_requested"
+        },
+        "operation": {
+          "source": "success",
+          "architecture": "success"
+        },
+        "conditional_classification": "decoupled",
+        "supported_independence": "unresolved",
+        "required_findings": [
+          {
+            "code": "support_gap",
+            "severity": {
+              "source": "warning",
+              "architecture": "warning"
+            }
+          },
+          {
+            "code": "unresolved_feasibility",
+            "severity": {
+              "source": "warning",
+              "architecture": "warning"
+            }
+          },
+          {
+            "code": "unavailable_external_input",
+            "severity": {
+              "source": "warning",
+              "architecture": "warning"
+            },
+            "subject": "attachment.admission_configuration"
+          },
+          {
+            "code": "unavailable_external_input",
+            "severity": {
+              "source": "warning",
+              "architecture": "warning"
+            },
+            "subject": "attachment.total_behavior"
+          }
+        ],
+        "permitted_additional_codes": [
+          "support_gap",
+          "unresolved_feasibility"
+        ],
+        "other_codes": "forbidden",
+        "scope": "design.receipt",
+        "pairing": {
+          "fr.admit_amount": "dp.amount_admission",
+          "fr.calculate_total": "dp.exact_addition"
+        },
+        "matrix": {
+          "fr.admit_amount": {
+            "dp.amount_admission": "material",
+            "dp.exact_addition": "none"
+          },
+          "fr.calculate_total": {
+            "dp.amount_admission": "material",
+            "dp.exact_addition": "material"
+          }
+        },
+        "valid_order": [
+          "dp.amount_admission",
+          "dp.exact_addition"
+        ],
+        "feasibility": "unresolved",
+        "information": {
+          "status": "unknown",
+          "value": null
+        },
+        "implementation_conformance": "unresolved",
+        "owner_results": {
+          "terraform_binding": {
+            "stage": "complete",
+            "subject": "pv.admission_policy",
+            "outcome": "unknown",
+            "cause": "No caller-supplied observations are available."
+          },
+          "event_model_link": {
+            "stage": "complete",
+            "subject": "module.total",
+            "outcome": "unknown",
+            "cause": "No external behavior model at the exact requested revision is available."
+          },
+          "html_view": {
+            "stage": "complete",
+            "payload_valid": true,
+            "outcomes": []
+          }
+        },
+        "core_matrix_unchanged_from": "starter_core"
+      }
+    }
+  ]
+}

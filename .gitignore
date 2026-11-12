@@ -23,12 +23,6 @@ profile.cov
 # Local and release builds
 bin/
 dist/
-
-# WebAssembly playground build artifacts (built by `make build-wasm`)
-/web/playground/adhcl.wasm
-/web/playground/wasm_exec.js
-/web/playground/seed.js
-
 # Local diagram previews
 /site*.html
 

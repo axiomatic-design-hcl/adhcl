@@ -1,0 +1,69 @@
+{
+  "format": "requirements_hcl/conformance-inspection/1",
+  "language": "requirements_hcl/core/1",
+  "status": "inspection_expectations_not_measured_results",
+  "input": "../../examples/requirements_hcl.ad.hcl",
+  "selection": {
+    "candidate": "decision.assessment_contracts.candidate.go_hcl_target",
+    "context": "context.semantic_changes",
+    "workload": "workload.semantic_changes"
+  },
+  "scope": "Focused expected gaps, not a complete diagnostic list or conformance oracle.",
+  "conditional_classifications": {
+    "design.requirements_hcl": "unresolved",
+    "dp.assessment_pipeline": "decoupled",
+    "dp.checked_graph": "decoupled",
+    "dp.owner_envelopes": "uncoupled",
+    "master": "unresolved"
+  },
+  "reasons": [
+    "The two root controls have material diagonals but no exact cross-root relations or defaults.",
+    "The five pipeline siblings have a stated lower-triangular mapping in the semantic-change workload.",
+    "The syntax and resolution siblings have a stated lower-triangular mapping in that workload.",
+    "The three owner siblings have a stated diagonal mapping under the fixed-owner premise.",
+    "The master axes retain nine active leaf FRs and nine active leaf DPs. Aggregate parent effects do not supply missing leaf cells, and exact unknowns remain unknown."
+  ],
+  "supported_independence": "unresolved",
+  "feasibility": "unresolved",
+  "information": { "status": "unknown", "value": null },
+  "expected_gaps": [
+    {
+      "code": "incomplete_module_contract",
+      "severity": { "source": "warning", "architecture": "error" },
+      "subjects": ["dp.binding_owner", "dp.behavior_owner", "dp.view_owner"],
+      "reason": "No realization modules are declared for these active leaf DPs. The six pipeline leaf modules do not realize these controls."
+    },
+    {
+      "code": "missing_leaf_scenario",
+      "severity": { "source": "warning", "architecture": "error" },
+      "subjects": ["fr.binding_links", "fr.behavior_links", "fr.view_layout"],
+      "reason": "The owner-change scenario verifies the parent extension_results criterion, not these three leaf criteria."
+    },
+    {
+      "code": "unresolved_refinement",
+      "severity": { "source": "warning", "architecture": "error" },
+      "subjects_include": ["fr.capture.criterion.lossless", "fr.admit_syntax.criterion.admitted_expressions", "fr.resolve_identity.criterion.typed_graph"],
+      "reason": "Authored criterion allocations and aggregate parent effects lack reviewed outcome arguments; citations alone cannot supply those arguments."
+    },
+    {
+      "code": "unresolved_influence",
+      "severity": { "source": "warning", "architecture": "error" },
+      "subjects": ["design.requirements_hcl", "master"],
+      "reason": "Unknown cross-root and leaf cells prevent complete classification. The syntax_profile to trace_selection leaf relation is explicitly unknown."
+    },
+    {
+      "code": "support_gap",
+      "severity": { "source": "warning", "architecture": "warning" },
+      "subjects_include": ["assumption.semantic_contracts", "assumption.fixed_expression_profile", "assumption.fixed_owner_contracts"],
+      "reason": "The premises remain to_validate. Mechanisms and citations are not trusted substantive review results."
+    },
+    {
+      "code": "unresolved_feasibility",
+      "severity": { "source": "warning", "architecture": "warning" },
+      "subjects": ["decision.assessment_contracts.candidate.go_hcl_target"],
+      "reason": "No applicable success evidence establishes every required criterion or constraint. The selected candidate stays provisional."
+    }
+  ],
+  "expected_operation": { "source": "success_with_warnings", "architecture": "failure" },
+  "preservation": "Do not change authored criteria, mechanisms, or conclusions to make this inspection pass. The process_failure context requires a separate assessment and must not inherit semantic-change zeros."
+}
