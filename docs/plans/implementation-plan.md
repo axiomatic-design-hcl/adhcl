@@ -85,7 +85,7 @@ The gate ends only when another implementer can decode each field without guessi
 
 ## 2. Align the repository and build
 
-Use the repository remote as the identity source. Keep Go 1.25 as the current declared minimum unless dependency compatibility requires an explicit change. Do not change the toolchain pin merely to bypass a build failure.
+Use the repository remote as the identity source. Keep Go 1.26 as the current declared minimum unless dependency compatibility or an unpatched standard-library vulnerability in a supported-minimum toolchain requires an explicit change. Go 1.25 was dropped because it reached end of life with unfixed `html/template` vulnerabilities (GO-2026-6599, GO-2026-6600). Do not change the toolchain pin merely to bypass a build failure.
 
 1. Keep the module path `github.com/axiomatic-design-hcl/adhcl`.
 2. Establish the package boundaries listed below.

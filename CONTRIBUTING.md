@@ -4,7 +4,7 @@ This guide covers local setup, the checks that CI runs, and the release path for
 
 ## Requirements
 
-Install Go 1.25 or later. CI runs the verification suite on Go `1.25.x` and `1.26.11`.
+Install Go 1.26 or later. CI runs the verification suite on Go `1.26.x` and `1.27.x`.
 
 Run `make help` to list the Makefile targets.
 
@@ -54,7 +54,7 @@ Add a line to [CHANGELOG.md](CHANGELOG.md) for each user-visible change.
 
 CI runs in `.github/workflows/ci.yml` on pull requests and on pushes to `main`.
 
-- The `verify` job runs `make verify` on Go `1.25.x` and `1.26.11`. It sets `GOTOOLCHAIN` to `local`.
+- The `verify` job runs `make verify` on Go `1.26.x` and `1.27.x`. It sets `GOTOOLCHAIN` to `local`.
 - The `build` job runs `go build ./cmd/adhcl` for these platforms on Go `1.26.11`: linux, darwin, and windows, each on amd64 and arm64.
 
 ## Releases
