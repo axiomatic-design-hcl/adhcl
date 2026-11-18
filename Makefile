@@ -3,14 +3,14 @@ BINARY := bin/adhcl
 
 .DEFAULT_GOAL := help
 
-.PHONY: help build test test-race vet fmt-check tidy-check staticcheck vulncheck validate-examples release-tag-check release-annotation-check release-version-check verify clean
+.PHONY: help build test test-race vet fmt-check tidy-check staticcheck vulncheck validate-examples diagram-example-check release-tag-check release-annotation-check release-version-check verify clean
 
 help: ## List available commands.
 	@awk 'BEGIN {FS = ":.*##"} /^[a-zA-Z0-9_-]+:.*##/ {printf "%-28s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
 build: $(BINARY) ## Build the validator into bin/.
 
-$(BINARY): $(shell find cmd internal -type f -name '*.go') go.mod go.sum
+$(BINARY): $(shell find cmd internal -type f) go.mod go.sum
 	@mkdir -p $(@D)
 	$(GO) build -o $@ ./cmd/adhcl
 
@@ -40,6 +40,15 @@ validate-examples: build ## Validate the shipped core files and manifest.
 	$(BINARY) validate examples/minimal.ad.hcl
 	$(BINARY) validate --profile architecture examples/architecture.ad.hcl
 	$(BINARY) validate examples/project/model.ad.project.hcl
+	@temporary=$$(mktemp -d); trap 'rm -rf "$$temporary"' EXIT; \
+	$(BINARY) diagram -o "$$temporary/minimal.html" examples/minimal.ad.hcl && \
+	$(BINARY) diagram -o "$$temporary/architecture.html" examples/architecture.ad.hcl && \
+	$(BINARY) diagram -o "$$temporary/project.html" examples/project/model.ad.project.hcl
+
+diagram-example-check: build ## Check that the committed diagram matches generated output.
+	@temporary=$$(mktemp -d); trap 'rm -rf "$$temporary"' EXIT; \
+	$(BINARY) diagram -o "$$temporary/architecture.html" examples/architecture.ad.hcl && \
+	cmp examples/architecture-diagram.html "$$temporary/architecture.html"
 
 release-tag-check: ## Test the stable semantic-version tag validator.
 	sh scripts/test-require-stable-tag.sh
@@ -50,10 +59,10 @@ release-annotation-check: ## Test annotated-tag verification from a tagless chec
 release-version-check: ## Verify the linker-injected release version is reported by adhcl.
 	@temporary=$$(mktemp -d); \
 	trap 'rm -rf "$$temporary"' EXIT; \
-	$(GO) build -ldflags '-X main.buildVersion=v0.1.0' -o "$$temporary/adhcl" ./cmd/adhcl; \
-	test "$$($$temporary/adhcl version)" = 'adhcl v0.1.0'
+	$(GO) build -ldflags '-X main.buildVersion=v0.2.0' -o "$$temporary/adhcl" ./cmd/adhcl; \
+	test "$$($$temporary/adhcl version)" = 'adhcl v0.2.0'
 
-verify: fmt-check tidy-check vet test test-race staticcheck vulncheck validate-examples release-tag-check release-annotation-check release-version-check ## Run the complete local verification suite.
+verify: fmt-check tidy-check vet test test-race staticcheck vulncheck validate-examples diagram-example-check release-tag-check release-annotation-check release-version-check ## Run the complete local verification suite.
 
 clean: ## Remove locally built artifacts.
 	rm -rf bin dist

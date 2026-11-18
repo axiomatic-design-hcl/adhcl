@@ -158,6 +158,7 @@ func TestAcceptance(t *testing.T) {
 		{"manifest symlink escape fails input", acceptanceManifestSymlink},
 		{"failed expectation exits one", acceptanceFailedExpectation},
 		{"release examples exit zero", acceptanceReleaseExamples},
+		{"diagram delivery", acceptanceDiagram},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

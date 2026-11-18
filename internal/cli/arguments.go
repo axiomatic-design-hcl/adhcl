@@ -13,7 +13,7 @@ type invocation struct {
 
 func parseArguments(args []string, version string) (invocation, error) {
 	if len(args) == 0 {
-		return invocation{}, usageError("expected version or validate command")
+		return invocation{}, usageError("expected version, validate or diagram command")
 	}
 	if version == "" {
 		version = "dev"
@@ -26,7 +26,7 @@ func parseArguments(args []string, version string) (invocation, error) {
 	}
 
 	command := args[0]
-	if command != "version" && command != "validate" {
+	if command != "version" && command != "validate" && command != "diagram" {
 		return invocation{}, usageError("unknown command %q", command)
 	}
 	parsed := invocation{
@@ -46,10 +46,27 @@ func parseArguments(args []string, version string) (invocation, error) {
 		return parsed, nil
 	}
 
-	return parseValidateArguments(parsed, commandArgs)
+	if command == "diagram" {
+		return parseCommandArguments(parsed, commandArgs, diagramFlags)
+	}
+	return parseCommandArguments(parsed, commandArgs, validationFlags)
 }
 
-func parseValidateArguments(parsed invocation, args []string) (invocation, error) {
+var validationFlags = map[string]string{
+	"--profile":   "--profile",
+	"--candidate": "--candidate",
+	"--context":   "--context",
+}
+
+var diagramFlags = map[string]string{
+	"--profile":   "--profile",
+	"--candidate": "--candidate",
+	"--context":   "--context",
+	"--output":    "--output",
+	"-o":          "--output",
+}
+
+func parseCommandArguments(parsed invocation, args []string, flags map[string]string) (invocation, error) {
 	seen := make(map[string]bool, 3)
 	pathSeen := false
 	flagsEnded := false
@@ -86,9 +103,11 @@ func parseValidateArguments(parsed invocation, args []string) (invocation, error
 		}
 
 		name, value, hasValue := strings.Cut(argument, "=")
-		if !isArgumentFlag(name) {
+		canonical, ok := flags[name]
+		if !ok || (name == "-o" && hasValue) {
 			return invocation{}, usageError("unknown flag %q", name)
 		}
+		name = canonical
 		if seen[name] {
 			return invocation{}, usageError("flag %q was repeated", name)
 		}
@@ -105,6 +124,8 @@ func parseValidateArguments(parsed invocation, args []string) (invocation, error
 		}
 
 		switch name {
+		case "--output":
+			parsed.request.Output = value
 		case "--profile":
 			if value != "source" && value != "architecture" {
 				return invocation{}, usageError("invalid profile %q", value)
@@ -124,13 +145,9 @@ func parseValidateArguments(parsed invocation, args []string) (invocation, error
 	}
 
 	if !pathSeen {
-		return invocation{}, usageError("validate requires an input path")
+		return invocation{}, usageError("%s requires an input path", parsed.command)
 	}
 	return parsed, nil
-}
-
-func isArgumentFlag(name string) bool {
-	return name == "--profile" || name == "--candidate" || name == "--context"
 }
 
 func isHelpFlag(argument string) bool {

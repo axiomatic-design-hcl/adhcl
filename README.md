@@ -1,6 +1,6 @@
 # adhcl
 
-adhcl validates authored design files written in the `.ad.hcl` language. It reads the input, checks it against the pinned language rules, runs the core assessment, and prints a text report. It does not render HTML.
+adhcl validates authored design files written in the `.ad.hcl` language. It reads the input, checks it against the pinned language rules, runs the core assessment, and prints a text report or generates an HTML diagram.
 
 Use adhcl to check that a design file parses, resolves, and passes the core assessment under a chosen profile.
 
@@ -23,6 +23,7 @@ Run `make help` to list every Makefile target.
 ```sh
 adhcl version
 adhcl validate [--profile source|architecture] [--candidate REF] [--context REF] [--] PATH
+adhcl diagram [--profile source|architecture] [--candidate REF] [--context REF] [-o FILE|--output FILE] [--] PATH
 adhcl --help
 adhcl -h
 ```
@@ -31,7 +32,11 @@ adhcl -h
 
 `adhcl validate` checks one input path and writes a report to stdout.
 
-Use these options with `validate`:
+`adhcl diagram` uses the same assessment and produces one self-contained HTML page. It writes to stdout by default. Use `-o FILE`, `--output FILE`, or `--output=FILE` to replace a file instead. The output directory must already exist. The command preserves the permissions of an existing file. A new file has permissions `0644`. A blocked assessment writes its report to stderr and leaves an existing output file unchanged.
+
+The page has one tab for each reader: start, business, product, architecture, engineering, trace and impact, risks and evidence, and a guide to the method. Each record has one home row, and every other mention links to it. The tabs need JavaScript. Without JavaScript, the page shows all tabs in order.
+
+Use these options with `validate` and `diagram`:
 
 - `--profile source|architecture` selects the profile. The default is `source`. See [Profiles](#profiles).
 - `--candidate REF` selects a candidate. The reference must match `decision.NAME.candidate.NAME`.
@@ -46,7 +51,7 @@ Follow these rules for options:
 - A value cannot start with `-`.
 - Repeating an option is an error.
 
-Use `adhcl validate --help` or `adhcl version --help` to print help for one command. Give the help option as the only argument.
+Use `adhcl validate --help`, `adhcl diagram --help`, or `adhcl version --help` to print help for one command. Give the help option as the only argument.
 
 ## Examples
 
@@ -100,7 +105,7 @@ Owners check attachments. adhcl has three built-in owners. The manifest declares
 
 The binding and behavior results stay unknown. adhcl does not receive observations or behavior models. Each attachment for these owners reports the outcome `unknown` with a stated cause and gets an `unavailable_external_input` warning.
 
-A valid `html_view` attachment reports `valid`. adhcl does not render the view.
+A valid `html_view` attachment reports `valid`. The `diagram` command uses a fixed tab order and does not apply the attachment's layout.
 
 ## Output
 
@@ -123,6 +128,8 @@ Usage errors and delivery failures go to stderr. A delivery failure looks like t
 | 0 | Validation completed without error findings. |
 | 1 | An input, parse, assessment, required attachment, or output step failed. |
 | 2 | The command line is invalid. |
+
+For `diagram`, exit code 0 means the page was delivered, even when it contains error findings. Exit code 1 means the core assessment was blocked or page delivery failed. Use `validate` as the CI gate.
 
 A zero exit code does not prove that the design is independent, implemented, or supported by observations.
 

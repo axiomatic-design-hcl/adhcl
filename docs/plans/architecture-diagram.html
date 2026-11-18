@@ -1,0 +1,648 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>pallet_count · Design diagram</title>
+<!--
+  Handwritten example of a design diagram for examples/architecture.ad.hcl.
+  The page shows three kinds of content and keeps them apart:
+    SOURCE         text copied from the .ad.hcl file
+    ADHCL          findings from `adhcl validate --profile architecture`
+    NOT IN SOURCE  data that the file does not contain
+  The page does not derive design findings. The adhcl tool derives them.
+-->
+<style>
+:root{
+  --paper:#FAF9F6; --panel:#F0EEE6; --ink:#141413; --muted:#5E5D59; --line:#D9D6CC;
+  --clay:#9B4B32; --clay-on-dark:#D97757; --dark-muted:#B0AEA5; --dark-line:#3D3D3A;
+  --sans:"Anthropic Sans","Styrene A",system-ui,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif;
+  --serif:"Anthropic Serif","Tiempos Headline",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:72px;scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.6 var(--sans)}
+a{color:inherit;text-underline-offset:4px}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--clay);outline-offset:3px}
+.dark :focus-visible{outline-color:var(--clay-on-dark)}
+code,.mono{font-family:var(--mono);font-size:12px}
+h1,h2,h3,p{margin:0}
+h1{font-size:32px;line-height:1.15;font-weight:600;letter-spacing:-.02em;max-width:26ch}
+h2{font-size:24px;line-height:1.25;font-weight:600;letter-spacing:-.01em}
+h3{font-size:16px;line-height:1.4;font-weight:600}
+p{max-width:65ch}
+.wrap{max-width:1198px;margin:0 auto;padding:0 24px}
+.skip{position:absolute;left:-999px}
+.skip:focus{left:8px;top:8px;background:var(--ink);color:var(--paper);padding:8px 12px;z-index:9}
+
+/* Top bar */
+.bar{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--ink)}
+.bar .wrap{display:flex;gap:24px;align-items:center;min-height:56px;overflow-x:auto}
+.bar strong{font-family:var(--mono);font-size:12px;white-space:nowrap}
+.bar nav{display:flex;gap:16px;margin-left:auto}
+.bar a{font-size:14px;text-decoration:none;white-space:nowrap;padding:16px 0}
+.bar a:hover{text-decoration:underline}
+
+/* Labels: the three kinds of content. Shape carries the meaning, not color. */
+.tag{display:inline-block;font-family:var(--mono);font-size:12px;line-height:1;padding:4px 8px;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.tag.src{border:1px solid currentColor}
+.tag.der{background:var(--ink);color:var(--paper);border:1px solid var(--ink)}
+.dark .tag.der{background:var(--paper);color:var(--ink);border-color:var(--paper)}
+.tag.gap{border:1px dashed currentColor}
+.eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.dark .eyebrow{color:var(--dark-muted)}
+
+/* Intro */
+.intro{padding:32px 0;display:grid;grid-template-columns:1.4fr 1fr;gap:32px;align-items:end}
+.intro .lead{font-size:20px;line-height:1.5;margin-top:16px}
+.boundary{border-left:1px solid var(--ink);padding-left:24px;font-size:14px}
+.boundary p+p{margin-top:8px}
+
+/* Health */
+.health{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--ink);margin-bottom:32px}
+.health>div{padding:24px}
+.health>div+div{border-left:1px solid var(--ink)}
+.health .n{font-size:32px;line-height:1;font-weight:600;display:block;margin:12px 0 4px}
+.health ul{margin:12px 0 0;padding:0;list-style:none;font-size:14px}
+.health li{padding:8px 0;border-top:1px solid var(--line)}
+.health li a{text-decoration:underline}
+
+/* Dark feature band */
+.dark{background:var(--ink);color:var(--paper)}
+.dark h2{font-family:var(--serif);font-weight:400;font-size:32px;line-height:1.2}
+.dark p{color:var(--dark-muted)}
+.band{padding:32px 0}
+.try{display:flex;gap:12px;flex-wrap:wrap;margin:24px 0 16px}
+.btn{background:transparent;border:1px solid currentColor;border-radius:0;padding:12px 16px;font-size:14px;min-height:44px}
+.btn:hover{text-decoration:underline}
+.btn.primary{background:var(--paper);color:var(--ink);border-color:var(--paper);border-radius:0 0 8px 8px}
+.btn[aria-pressed=true]{background:var(--clay-on-dark);border-color:var(--clay-on-dark);color:var(--ink)}
+.map-scroll{overflow-x:auto;border-top:1px solid var(--dark-line);border-bottom:1px solid var(--dark-line);padding:16px 0}
+#map{display:block;min-width:960px;width:100%;height:auto}
+#map .h{font-family:var(--mono);font-size:12px;letter-spacing:.06em;fill:var(--paper)}
+#map .q{font-size:12px;fill:var(--dark-muted)}
+#map .node{cursor:pointer;outline:none;transition:opacity .15s}
+#map .node rect{fill:var(--ink);stroke:var(--paper);stroke-width:1}
+#map .node .id{font-family:var(--mono);font-size:11px;fill:var(--dark-muted)}
+#map .node .t{font-size:14px;font-weight:600;fill:var(--paper)}
+#map .node .s{font-size:12px;fill:var(--dark-muted)}
+#map .node:hover rect{stroke-width:2}
+#map .node:focus-visible rect{stroke:var(--clay-on-dark);stroke-width:3}
+#map .node.sel rect{stroke:var(--clay-on-dark);stroke-width:3}
+#map .edge{fill:none;stroke:var(--paper);stroke-width:1;opacity:.6;transition:opacity .15s}
+#map .edge.inf{stroke:var(--clay-on-dark);stroke-dasharray:5 4;stroke-width:1.5;opacity:1}
+#map .lbl{font-size:12px;fill:var(--dark-muted)}
+#map .lbl.inf{fill:var(--clay-on-dark)}
+#map.active .node:not(.hit){opacity:.22}
+#map.active .edge:not(.hit),#map.active .lbl:not(.hit){opacity:.12}
+#map.active .edge.hit{opacity:1}
+.detail{display:grid;grid-template-columns:1fr 1fr;gap:32px;padding-top:24px;min-height:150px}
+.detail h3{font-family:var(--mono);font-size:14px;font-weight:400;margin-bottom:8px}
+.detail p{color:var(--paper)}
+.detail .k{color:var(--dark-muted);font-size:14px;margin-bottom:4px}
+.detail ul{margin:8px 0 0;padding-left:20px;font-size:14px}
+
+/* Sections */
+section.view{padding:32px 0;border-top:1px solid var(--ink)}
+.head{display:grid;grid-template-columns:64px 1fr;gap:0 16px;margin-bottom:24px}
+.head .idx{font-family:var(--mono);font-size:12px;padding-top:8px;color:var(--muted)}
+.head p{margin-top:8px;color:var(--muted);grid-column:2}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.card{border:1px solid var(--ink);padding:24px}
+.card>*+*{margin-top:12px}
+.card.gap{border-style:dashed;background:var(--panel)}
+.card.dark{border-color:var(--ink)}
+.card.dark p{color:var(--dark-muted)}
+.meta{font-size:14px;color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:12px 16px 12px 0;border-top:1px solid var(--line)}
+thead th{border-top:0;font-family:var(--mono);font-size:12px;font-weight:400;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.scroll{overflow-x:auto}
+dl{margin:0;font-size:14px}
+dt{font-family:var(--mono);font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);margin-top:12px}
+dd{margin:4px 0 0}
+ol,ul{max-width:65ch}
+
+/* Decomposition tree */
+.tree{display:grid;gap:0}
+.level{display:grid;grid-template-columns:120px 1fr;gap:16px;padding:16px 0;border-top:1px solid var(--line)}
+.level:first-child{border-top:0}
+.level .lv{font-family:var(--mono);font-size:12px;color:var(--muted);padding-top:12px}
+.pairs{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.pair{display:grid;grid-template-columns:1fr 32px 1fr;align-items:stretch}
+.pair .box{border:1px solid var(--ink);padding:12px;font-size:14px}
+.pair .box code{display:block;color:var(--muted)}
+.pair .zig{display:grid;place-items:center;font-size:20px}
+.slot{border:1px dashed var(--ink);background:var(--panel);padding:12px;font-size:14px}
+
+/* Matrix */
+.matrix{width:auto;font-size:14px}
+.matrix th,.matrix td{border:1px solid var(--dark-line);padding:0;text-align:center}
+.matrix thead th,.matrix tbody th{padding:12px 16px;color:var(--dark-muted);text-align:left;font-family:var(--mono);font-size:12px;text-transform:none}
+.matrix button{width:96px;height:72px;background:transparent;border:0;border-radius:0;font:400 32px/1 var(--serif);color:var(--paper)}
+.matrix button.off{color:var(--clay-on-dark)}
+.matrix button.zero{color:var(--dark-muted)}
+.matrix button[aria-pressed=true]{background:var(--paper);color:var(--ink)}
+.why{border-left:1px solid var(--paper);padding-left:16px;margin-top:16px;min-height:72px}
+.why p{color:var(--paper)}
+.verdict{font-family:var(--serif);font-size:32px;line-height:1.2}
+.order{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-family:var(--mono);font-size:12px}
+.order span.step{border:1px solid var(--ink);padding:8px 12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:14px}
+.flow .st{border:1px solid var(--ink);padding:8px 12px;border-radius:8px}
+.flow .dp{border:1px solid var(--ink);padding:8px 12px;background:var(--ink);color:var(--paper)}
+.flow .ar{font-family:var(--mono);font-size:12px;color:var(--muted)}
+details{border-top:1px solid var(--line);padding:12px 0}
+details:last-of-type{border-bottom:1px solid var(--line)}
+summary{cursor:pointer;min-height:32px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+details ol{font-size:14px;margin:12px 0 0;padding-left:20px}
+pre{font-family:var(--mono);font-size:12px;line-height:1.6;background:var(--panel);padding:16px;overflow-x:auto;margin:12px 0 0}
+footer{border-top:1px solid var(--ink);padding:24px 0 48px;font-size:14px;color:var(--muted)}
+footer .legend{display:flex;gap:24px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+footer .legend span.i{display:flex;gap:8px;align-items:center}
+@media (max-width:800px){
+  .intro,.health,.two,.detail,.pairs{grid-template-columns:1fr}
+  .health>div+div{border-left:0;border-top:1px solid var(--ink)}
+  .head{grid-template-columns:1fr}.head p{grid-column:1}
+  .level{grid-template-columns:1fr}
+  .bar nav{margin-left:0}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#map-title">Skip to the diagram</a>
+
+<div class="bar"><div class="wrap">
+  <strong>design.pallet_count</strong>
+  <nav aria-label="Views">
+    <a href="#trace">Map</a>
+    <a href="#needs">Needs</a>
+    <a href="#requirements">Requirements</a>
+    <a href="#decomposition">Decomposition</a>
+    <a href="#independence">Independence</a>
+    <a href="#evaluation">Evaluation</a>
+    <a href="#modules">Modules</a>
+    <a href="#verification">Verification</a>
+  </nav>
+</div></div>
+
+<header class="wrap">
+  <div class="intro">
+    <div>
+      <div class="eyebrow">architecture.ad.hcl / level: architecture</div>
+      <h1>Count the right scans. See what is not proven.</h1>
+      <p class="lead">This page shows one design. Follow each need to its requirement, its design choice, its module, and its test.</p>
+    </div>
+    <aside class="boundary">
+      <span class="tag src">Source</span>
+      <p><strong>Boundary.</strong> Count the accepted scans of one pallet batch.</p>
+      <p>The scanner hardware, the network, and the storage system are outside the boundary.</p>
+    </aside>
+  </div>
+
+  <div class="health" aria-label="Design health">
+    <div>
+      <span class="tag der">adhcl</span>
+      <span class="n">0 errors</span>
+      <h3>What holds</h3>
+      <ul>
+        <li>Each need has a requirement. 2 of 2.</li>
+        <li>Each requirement has one design parameter. 2 of 2.</li>
+        <li>The structure is <a href="#independence">decoupled</a>. This agrees with the expectation in the source.</li>
+        <li>Each criterion has a scenario. 2 of 2.</li>
+      </ul>
+    </div>
+    <div>
+      <span class="tag der">adhcl</span> <span class="tag src">Source</span>
+      <span class="n">4 warnings</span>
+      <h3>What needs a review</h3>
+      <ul>
+        <li>4 influence claims have <a href="#independence">no reviewed support</a>.</li>
+        <li>2 scenarios have <a href="#verification">no recorded result</a>.</li>
+        <li>2 needs are <a href="#needs">proposed</a>. No customer evidence is recorded.</li>
+      </ul>
+    </div>
+    <div>
+      <span class="tag gap">Not in source</span>
+      <span class="n">5 gaps</span>
+      <h3>What the file does not contain</h3>
+      <ul>
+        <li><a href="#decomposition">Child levels</a> below the architecture level.</li>
+        <li><a href="#requirements">Constraints</a>.</li>
+        <li><a href="#evaluation">Design alternatives</a>.</li>
+        <li><a href="#evaluation">Success probability</a> for the Information Axiom.</li>
+        <li><a href="#modules">Process variables</a>.</li>
+      </ul>
+      <p class="meta" style="margin-top:12px">A gap is not a failure. A gap means that no data exists.</p>
+    </div>
+  </div>
+</header>
+
+<!-- ============ THE MAP: traceability and change impact ============ -->
+<div class="dark band" id="trace">
+  <div class="wrap">
+    <div class="eyebrow">Traceability and impact</div>
+    <h2 id="map-title">Change one rule. See what it touches.</h2>
+    <p style="margin-top:12px">Select a box to see its chain. Select a design parameter to see each item that you must test again after a change.</p>
+    <div class="try">
+      <button class="btn primary" data-pick="dp.scan_admission" aria-pressed="false">Change the digit rule</button>
+      <button class="btn" data-pick="dp.batch_counter" aria-pressed="false">Change the counting rule</button>
+      <button class="btn" id="clear" hidden>Show all</button>
+    </div>
+    <div class="map-scroll">
+      <svg id="map" viewBox="0 0 1150 340" role="group" aria-labelledby="map-title">
+        <defs>
+          <marker id="ah" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#FAF9F6"/></marker>
+          <marker id="ahc" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="#D97757"/></marker>
+        </defs>
+
+        <text class="h" x="20" y="20">CUSTOMER NEEDS</text><text class="q" x="20" y="42">Why the system exists</text>
+        <text class="h" x="250" y="20">REQUIREMENTS (FR)</text><text class="q" x="250" y="42">What the system must do</text>
+        <text class="h" x="480" y="20">DESIGN PARAMETERS (DP)</text><text class="q" x="480" y="42">How the design does it</text>
+        <text class="h" x="710" y="20">MODULES</text><text class="q" x="710" y="42">Where the design lives</text>
+        <text class="h" x="940" y="20">SCENARIOS</text><text class="q" x="940" y="42">How you test it</text>
+
+        <!-- Trace edges -->
+        <path class="edge" data-a="need.valid_scans_only" data-b="fr.accept_scan" d="M210,112 H247" marker-end="url(#ah)"/>
+        <path class="edge" data-a="fr.accept_scan" data-b="dp.scan_admission" d="M440,112 H477" marker-end="url(#ah)"/>
+        <path class="edge" data-a="dp.scan_admission" data-b="module.scan_check" d="M670,112 H707" marker-end="url(#ah)"/>
+        <path class="edge" data-a="module.scan_check" data-b="scenario.scan_digits" d="M900,112 H937" marker-end="url(#ah)"/>
+        <path class="edge" data-a="need.exact_count" data-b="fr.count_pallet" d="M210,272 H247" marker-end="url(#ah)"/>
+        <path class="edge" data-a="fr.count_pallet" data-b="dp.batch_counter" d="M440,272 H477" marker-end="url(#ah)"/>
+        <path class="edge" data-a="dp.batch_counter" data-b="module.batch_count" d="M670,272 H707" marker-end="url(#ah)"/>
+        <path class="edge" data-a="module.batch_count" data-b="scenario.batch_counts" d="M900,272 H937" marker-end="url(#ah)"/>
+        <!-- Module dependency -->
+        <path class="edge" data-a="module.batch_count" data-b="module.scan_check" d="M805,224 V163" marker-end="url(#ah)"/>
+        <text class="lbl" data-a="module.batch_count" data-b="module.scan_check" x="815" y="197">depends on</text>
+        <!-- The one off-diagonal influence -->
+        <path class="edge inf" data-a="dp.scan_admission" data-b="fr.count_pallet" d="M540,160 C540,200 380,184 380,221" marker-end="url(#ahc)"/>
+        <text class="lbl inf" data-a="dp.scan_admission" data-b="fr.count_pallet" x="478" y="212">also changes the count</text>
+
+        <!-- Nodes -->
+        <g class="node" tabindex="0" role="button" aria-pressed="false" data-id="need.valid_scans_only" aria-label="Need: count valid scans only" transform="translate(20,64)"><rect width="190" height="96"/><text class="id" x="12" y="24">need.valid_scans_only</text><text class="t" x="12" y="50">Count valid scans only</text><text class="s" x="12" y="78">Proposed</text></g>
+        <g class="node" tabindex="0" role="button" aria-pressed="false" data-id="fr.accept_scan" aria-label="Requirement: accept 12-digit scans" transform="translate(250,64)"><rect width="190" height="96"/><text class="id" x="12" y="24">fr.accept_scan</text><text class="t" x="12" y="50">Accept 12-digit scans</text><text class="s" x="12" y="78">digits == 12</text></g>
+        <g class="node" tabindex="0" role="button" aria-pressed="false" data-id="dp.scan_admission" aria-label="Design parameter: scan admission" transform="translate(480,64)"><rect width="190" height="96"/><text class="id" x="12" y="24">dp.scan_admission</text><text class="t" x="12" y="50">Scan admission</text><text class="s" x="12" y="78">Owns accepted_scan</text></g>
+        <g class="node" tabindex="0" role="button" aria-pressed="false" data-id="module.scan_check" aria-label="Module: scan check" transform="translate(710,64)"><rect width="190" height="96"/><text class="id" x="12" y="24">module.scan_check</text><text class="t" x="12" y="50">Scan check</text><text class="s" x="12" y="78">No dependencies</text></g>
+        <g class="node" tabindex="0" role="button" aria-pressed="false" data-id="scenario.scan_digits" aria-label="Scenario: digit rule cases, not run" transform="translate(940,64)"><rect width="190" height="96" stroke-dasharray="5 4"/><text class="id" x="12" y="24">scenario.scan_digits</text><text class="t" x="12" y="50">Digit rule cases</text><text class="s" x="12" y="78">No recorded result</text></g>
+
+        <g class="node" tabindex="0" role="button" aria-pressed="false" data-id="need.exact_count" aria-label="Need: report the exact count" transform="translate(20,224)"><rect width="190" height="96"/><text class="id" x="12" y="24">need.exact_count</text><text class="t" x="12" y="50">Report the exact count</text><text class="s" x="12" y="78">Proposed, no rationale</text></g>
+        <g class="node" tabindex="0" role="button" aria-pressed="false" data-id="fr.count_pallet" aria-label="Requirement: return the batch count" transform="translate(250,224)"><rect width="190" height="96"/><text class="id" x="12" y="24">fr.count_pallet</text><text class="t" x="12" y="50">Return the batch count</text><text class="s" x="12" y="78">difference == 0 scans</text></g>
+        <g class="node" tabindex="0" role="button" aria-pressed="false" data-id="dp.batch_counter" aria-label="Design parameter: batch counter" transform="translate(480,224)"><rect width="190" height="96"/><text class="id" x="12" y="24">dp.batch_counter</text><text class="t" x="12" y="50">Batch counter</text><text class="s" x="12" y="78">Reads accepted_scan</text></g>
+        <g class="node" tabindex="0" role="button" aria-pressed="false" data-id="module.batch_count" aria-label="Module: batch count" transform="translate(710,224)"><rect width="190" height="96"/><text class="id" x="12" y="24">module.batch_count</text><text class="t" x="12" y="50">Batch count</text><text class="s" x="12" y="78">Owns batch_count</text></g>
+        <g class="node" tabindex="0" role="button" aria-pressed="false" data-id="scenario.batch_counts" aria-label="Scenario: batch count cases, not run" transform="translate(940,224)"><rect width="190" height="96" stroke-dasharray="5 4"/><text class="id" x="12" y="24">scenario.batch_counts</text><text class="t" x="12" y="50">Batch count cases</text><text class="s" x="12" y="78">No recorded result</text></g>
+      </svg>
+    </div>
+    <div class="detail" id="detail" aria-live="polite">
+      <div>
+        <p class="k">Nothing is selected.</p>
+        <p>A solid line shows a declared link. The dashed clay line shows the one influence that crosses from one row to the other row.</p>
+      </div>
+      <div>
+        <p class="k">A dashed box has no evidence.</p>
+        <p>The two scenarios are defined. The source does not record a test run for them.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+<!-- 01 -->
+<section class="view" id="needs" aria-labelledby="needs-t">
+  <div class="head"><span class="idx">01</span><h2 id="needs-t">Customer needs</h2>
+    <p>A customer need states an outcome that a person wants. Both needs are proposals. The source names no customer, no interview, and no priority.</p></div>
+  <div class="two">
+    <article class="card">
+      <span class="tag src">Source · proposed</span>
+      <h3>Count only scans that have exactly twelve digits.</h3>
+      <code>need.valid_scans_only</code>
+      <p class="meta">Why: A scan with another format is not a valid product code.</p>
+    </article>
+    <article class="card">
+      <span class="tag src">Source · proposed</span>
+      <h3>Report the exact number of counted scans for each batch.</h3>
+      <code>need.exact_count</code>
+      <p class="meta">Why: The source gives no reason.</p>
+    </article>
+  </div>
+</section>
+
+<!-- 02 -->
+<section class="view" id="requirements" aria-labelledby="req-t">
+  <div class="head"><span class="idx">02</span><h2 id="req-t">Requirements and constraints</h2>
+    <p>A functional requirement (FR) states what the system must do. A criterion is the measure that shows the FR is satisfied. A constraint is a limit on the permitted solutions.</p></div>
+  <div class="scroll"><table>
+    <thead><tr><th>Requirement</th><th>Criterion</th><th>Measure</th><th>From need</th><th>Tested by</th></tr></thead>
+    <tbody>
+      <tr><td><code>fr.accept_scan</code><br>Accept a scan only when it has exactly twelve digits.</td>
+        <td><code>digit_count</code><br>Every accepted scan has exactly twelve digits.</td>
+        <td>number of digits in an accepted scan <strong>== 12 digits</strong><br><span class="meta">proposed</span></td>
+        <td><code>need.valid_scans_only</code></td><td><code>scenario.scan_digits</code></td></tr>
+      <tr><td><code>fr.count_pallet</code><br>Return the number of accepted scans in the batch.</td>
+        <td><code>exact_count</code><br>The returned count equals the number of accepted scans.</td>
+        <td>absolute difference between the returned count and the number of accepted scans <strong>== 0 scans</strong><br><span class="meta">proposed</span></td>
+        <td><code>need.exact_count</code></td><td><code>scenario.batch_counts</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="card gap" style="margin-top:24px">
+    <span class="tag gap">Not in source</span>
+    <h3>No constraint is declared.</h3>
+    <p class="meta">The boundary says what is outside the system. It does not limit the solution. A constraint row will show here, with each design choice that breaks it.</p>
+  </div>
+</section>
+
+<!-- 03 -->
+<section class="view" id="decomposition" aria-labelledby="dec-t">
+  <div class="head"><span class="idx">03</span><h2 id="dec-t">Design decomposition</h2>
+    <p>A design parameter (DP) is the mechanism that controls one FR. To decompose, you select a DP, then you write the child FRs that this DP makes necessary. This file has one level.</p></div>
+  <div class="tree">
+    <div class="level"><span class="lv">Level 0<br>design</span>
+      <div class="pair" style="grid-template-columns:1fr"><div class="box"><code>design.pallet_count</code>Count the accepted scans of one pallet batch.</div></div></div>
+    <div class="level"><span class="lv">Level 1<br>architecture</span>
+      <div class="pairs">
+        <div class="pair"><div class="box"><code>fr.accept_scan</code>Accept 12-digit scans</div><div class="zig" aria-label="controlled by">→</div><div class="box"><code>dp.scan_admission</code>Scan admission · selected</div></div>
+        <div class="pair"><div class="box"><code>fr.count_pallet</code>Return the batch count</div><div class="zig" aria-label="controlled by">→</div><div class="box"><code>dp.batch_counter</code>Batch counter · selected</div></div>
+      </div></div>
+    <div class="level"><span class="lv">Level 2</span>
+      <div class="pairs">
+        <div class="slot"><span class="tag gap">Not in source</span><br>No child FR is declared below <code>dp.scan_admission</code>.</div>
+        <div class="slot"><span class="tag gap">Not in source</span><br>No child FR is declared below <code>dp.batch_counter</code>.</div>
+      </div></div>
+  </div>
+  <p class="meta" style="margin-top:16px">When the source has child levels, each level shows its own matrix in view 04.</p>
+</section>
+
+<!-- 04 -->
+<section class="view" id="independence" aria-labelledby="ind-t">
+  <div class="head"><span class="idx">04</span><h2 id="ind-t">Architecture and independence</h2>
+    <p>The Independence Axiom says that you must be able to satisfy each FR without breaking another FR. The matrix shows which DP changes which FR.</p></div>
+  <div class="two">
+    <div class="card dark">
+      <span class="tag src">Source · influence blocks</span>
+      <div class="scroll"><table class="matrix">
+        <caption class="meta" style="text-align:left;color:var(--dark-muted);padding-bottom:12px">Rows are FRs. Columns are DPs. X is a material influence. 0 is a declared absence of influence.</caption>
+        <thead><tr><th></th><th scope="col">dp.scan_admission</th><th scope="col">dp.batch_counter</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">fr.accept_scan</th>
+            <td><button data-cell="0" aria-pressed="false" aria-label="X: scan admission changes accept scan">X</button></td>
+            <td><button class="zero" data-cell="1" aria-pressed="false" aria-label="0: batch counter does not change accept scan">0</button></td></tr>
+          <tr><th scope="row">fr.count_pallet</th>
+            <td><button class="off" data-cell="2" aria-pressed="false" aria-label="X: scan admission changes count pallet">X</button></td>
+            <td><button data-cell="3" aria-pressed="false" aria-label="X: batch counter changes count pallet">X</button></td></tr>
+        </tbody>
+      </table></div>
+      <div class="why" id="why" aria-live="polite"><p class="meta" style="color:var(--dark-muted)">Select a cell to read the reason from the source.</p></div>
+    </div>
+    <div class="card">
+      <span class="tag der">adhcl · scope design.pallet_count</span>
+      <p class="verdict">Decoupled.</p>
+      <p>The matrix is a triangle. One DP changes two FRs, so the order of the work matters. If you set the DPs in this order, each FR stays satisfied.</p>
+      <div class="order" aria-label="Design order"><span class="step">1 · dp.scan_admission</span><span aria-hidden="true">→</span><span class="step">2 · dp.batch_counter</span></div>
+      <table>
+        <tbody>
+          <tr><th scope="row">Pairing</th><td><code>fr.accept_scan</code> with <code>dp.scan_admission</code><br><code>fr.count_pallet</code> with <code>dp.batch_counter</code></td></tr>
+          <tr><th scope="row">Expectation</th><td><code>expect.pallet_structure</code> declares <code>decoupled</code> with the same order. The result agrees.</td></tr>
+          <tr><th scope="row">Cycles</th><td>None.</td></tr>
+          <tr><th scope="row">Limit</th><td>4 warnings of type <code>support_gap</code>. No influence claim has reviewed support. The result is true only if the four claims are true.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <h3 style="margin:24px 0 12px">State ownership</h3>
+  <div class="flow" aria-label="State ownership">
+    <span class="dp">dp.scan_admission</span><span class="ar">owns →</span><span class="st">state.accepted_scan</span><span class="ar">→ read by</span><span class="dp">dp.batch_counter</span><span class="ar">owns →</span><span class="st">state.batch_count</span>
+  </div>
+  <p class="meta" style="margin-top:12px">Each state has one owner. An accepted scan does not change after it is published. The design order is not the runtime order.</p>
+</section>
+
+<!-- 05 -->
+<section class="view" id="evaluation" aria-labelledby="eva-t">
+  <div class="head"><span class="idx">05</span><h2 id="eva-t">Design evaluation</h2>
+    <p>The Information Axiom says that the best design has the highest probability of success. Information content is I = −log₂(p), where p is the probability that the design satisfies the FR.</p></div>
+  <div class="two">
+    <div class="card gap">
+      <span class="tag gap">Not in source</span>
+      <h3>No alternative is recorded.</h3>
+      <p class="meta">Both DPs have <code>decision = "selected"</code>. The source does not name a rejected candidate or a reason for the selection. The comparison table stays empty.</p>
+    </div>
+    <div class="card gap">
+      <span class="tag gap">Not in source</span>
+      <h3>Insufficient evidence. No score.</h3>
+      <p class="meta">The source gives exact criteria. It gives no probability of success, no tolerance, and no measured result. A scenario that passes does not prove that p = 1.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 06 -->
+<section class="view" id="modules" aria-labelledby="mod-t">
+  <div class="head"><span class="idx">06</span><h2 id="mod-t">Implementation and process</h2>
+    <p>A module is the part of the software that realizes one DP. A process variable (PV) says how a DP is built or delivered.</p></div>
+  <div class="two">
+    <article class="card">
+      <span class="tag src">Source</span>
+      <h3>Scan check</h3>
+      <code>module.scan_check → dp.scan_admission</code>
+      <dl>
+        <dt>Input</dt><dd>One scan text value from the scanner.</dd>
+        <dt>Output</dt><dd>An accepted scan, or a rejection without any scan text.</dd>
+        <dt>Owns state</dt><dd><code>state.accepted_scan</code></dd>
+        <dt>Dependencies</dt><dd>None.</dd>
+        <dt>Invariants</dt><dd>Only text with exactly twelve digits becomes an accepted scan.</dd><dd>A published accepted scan does not change.</dd>
+        <dt>On failure</dt><dd>Reject the scan and publish nothing when the scan text cannot be read.</dd>
+        <dt>Acceptance</dt><dd><code>fr.accept_scan.criterion.digit_count</code><br><code>scenario.scan_digits</code></dd>
+      </dl>
+    </article>
+    <article class="card">
+      <span class="tag src">Source</span>
+      <h3>Batch count</h3>
+      <code>module.batch_count → dp.batch_counter</code>
+      <dl>
+        <dt>Input</dt><dd>The accepted scans of one batch, read from the scan module.</dd>
+        <dt>Output</dt><dd>The number of accepted scans in the batch.</dd>
+        <dt>Owns state</dt><dd><code>state.batch_count</code></dd>
+        <dt>Dependencies</dt><dd><code>module.scan_check</code></dd>
+        <dt>Invariants</dt><dd>The count equals the number of accepted scans added to the batch.</dd><dd>A rejected scan never changes the count.</dd>
+        <dt>On failure</dt><dd>Report a failure and no count when an accepted scan cannot be read.</dd>
+        <dt>Acceptance</dt><dd><code>fr.count_pallet.criterion.exact_count</code><br><code>scenario.batch_counts</code></dd>
+      </dl>
+    </article>
+  </div>
+  <div class="card gap" style="margin-top:24px">
+    <span class="tag gap">Not in source</span>
+    <h3>No process variable is declared.</h3>
+    <p class="meta">The DP to PV matrix cannot be drawn. The source also has no link to source code, no build result, and no delivery status.</p>
+  </div>
+</section>
+
+<!-- 07 -->
+<section class="view" id="verification" aria-labelledby="ver-t">
+  <div class="head"><span class="idx">07</span><h2 id="ver-t">Verification</h2>
+    <p>A scenario is a list of steps that tests one criterion. A scenario is a plan. It is not a test result.</p></div>
+  <div class="scroll"><table>
+    <thead><tr><th>Criterion</th><th>Scenario</th><th>Kind</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td><code>fr.accept_scan.criterion.digit_count</code></td><td><code>scenario.scan_digits</code></td><td>operational</td><td><span class="tag gap">No recorded result</span></td></tr>
+      <tr><td><code>fr.count_pallet.criterion.exact_count</code></td><td><code>scenario.batch_counts</code></td><td>operational</td><td><span class="tag gap">No recorded result</span></td></tr>
+    </tbody>
+  </table></div>
+  <div style="margin-top:24px">
+    <details open>
+      <summary><code>scenario.scan_digits</code> Covers the digit rule at the accepted length and at the lengths around it.</summary>
+      <ol>
+        <li>Submit a scan with twelve digits and expect it to be accepted.</li>
+        <li>Submit scans with eleven digits, thirteen digits, and letters. Expect a rejection for each.</li>
+        <li>Expect no accepted scan from any rejected input.</li>
+      </ol>
+    </details>
+    <details>
+      <summary><code>scenario.batch_counts</code> Covers a batch with a rejected scan and an empty batch.</summary>
+      <ol>
+        <li>Submit three accepted scans and one rejected scan to one batch.</li>
+        <li>Expect the returned count to be 3.</li>
+        <li>Submit an empty batch and expect the returned count to be 0.</li>
+      </ol>
+    </details>
+    <details>
+      <summary><span class="tag der">adhcl</span> Validation report</summary>
+<pre>$ adhcl validate --profile architecture examples/architecture.ad.hcl
+Contract: requirements_hcl/core/1   Profile: architecture
+
+warning support_gap  :68  dp.scan_admission to fr.accept_scan has no reviewed support.
+warning support_gap  :75  dp.batch_counter to fr.count_pallet has no reviewed support.
+warning support_gap  :82  dp.scan_admission to fr.count_pallet has no reviewed support.
+warning support_gap  :89  dp.batch_counter to fr.accept_scan has no reviewed support.
+
+Scope design.pallet_count: decoupled.
+  Order: dp.scan_admission, dp.batch_counter
+
+Errors: 0   Warnings: 4
+Exit code 0 means that validation completed under the profile,
+not that the design is independent or implemented.</pre>
+    </details>
+  </div>
+</section>
+
+</main>
+
+<footer><div class="wrap">
+  <div class="legend">
+    <span class="i"><span class="tag src">Source</span> Text from the file.</span>
+    <span class="i"><span class="tag der">adhcl</span> A finding from the tool.</span>
+    <span class="i"><span class="tag gap">Not in source</span> No data exists.</span>
+  </div>
+  <p>Source: <a href="architecture.ad.hcl">examples/architecture.ad.hcl</a>. This page is an example of a generated view. The <code>adhcl</code> tool makes the findings. The page only shows them.</p>
+</div></footer>
+
+<script>
+(() => {
+  // Declared links, copied from the model. The page draws them. It does not judge them.
+  const TRACE = [
+    ["need.valid_scans_only","fr.accept_scan"],["fr.accept_scan","dp.scan_admission"],
+    ["dp.scan_admission","module.scan_check"],["module.scan_check","scenario.scan_digits"],
+    ["need.exact_count","fr.count_pallet"],["fr.count_pallet","dp.batch_counter"],
+    ["dp.batch_counter","module.batch_count"],["module.batch_count","scenario.batch_counts"]
+  ];
+  const INFLUENCES = { // material influences only
+    "dp.scan_admission":["fr.accept_scan","fr.count_pallet"],
+    "dp.batch_counter":["fr.count_pallet"]
+  };
+  const FR = {
+    "fr.accept_scan":{need:"need.valid_scans_only",scenario:"scenario.scan_digits",module:"module.scan_check"},
+    "fr.count_pallet":{need:"need.exact_count",scenario:"scenario.batch_counts",module:"module.batch_count"}
+  };
+  const INFO = {
+    "need.valid_scans_only":["Customer need","Count only scans that have exactly twelve digits."],
+    "need.exact_count":["Customer need","Report the exact number of counted scans for each batch."],
+    "fr.accept_scan":["Functional requirement","Accept a scan only when it has exactly twelve digits."],
+    "fr.count_pallet":["Functional requirement","Return the number of accepted scans in the batch."],
+    "dp.scan_admission":["Design parameter","Accept a scan only when its text has exactly twelve digits, then publish it as the accepted scan."],
+    "dp.batch_counter":["Design parameter","Add one to the batch count for each accepted scan."],
+    "module.scan_check":["Module","Input: one scan text value from the scanner. Output: an accepted scan, or a rejection without any scan text."],
+    "module.batch_count":["Module","Input: the accepted scans of one batch. Output: the number of accepted scans in the batch."],
+    "scenario.scan_digits":["Scenario","Covers the digit rule at the accepted length and at the lengths around it."],
+    "scenario.batch_counts":["Scenario","Covers a batch with a rejected scan and an empty batch."]
+  };
+  const map = document.getElementById("map"), detail = document.getElementById("detail");
+  const clear = document.getElementById("clear"), idle = detail.innerHTML;
+  const nodes = [...map.querySelectorAll(".node")], links = [...map.querySelectorAll("[data-a]")];
+  const picks = [...document.querySelectorAll("[data-pick]")];
+  const el = (tag, text, cls) => { const e = document.createElement(tag); e.textContent = text; if (cls) e.className = cls; return e; };
+
+  function walk(id, dir, out) {
+    for (const [a, b] of TRACE) {
+      const [from, to] = dir > 0 ? [a, b] : [b, a];
+      if (from === id && !out.has(to)) { out.add(to); walk(to, dir, out); }
+    }
+  }
+  function related(id) {
+    const set = new Set([id]);
+    if (INFLUENCES[id]) {
+      for (const fr of INFLUENCES[id]) { set.add(fr); set.add(FR[fr].need); set.add(FR[fr].scenario); set.add(FR[fr].module); }
+      walk(id, 1, set);
+    } else { walk(id, 1, set); walk(id, -1, set); }
+    return set;
+  }
+  function select(id) {
+    if (!id) {
+      map.classList.remove("active");
+      nodes.forEach(n => { n.classList.remove("hit", "sel"); n.setAttribute("aria-pressed", "false"); });
+      links.forEach(l => l.classList.remove("hit"));
+      picks.forEach(p => p.setAttribute("aria-pressed", "false"));
+      clear.hidden = true; detail.innerHTML = idle; return;
+    }
+    const set = related(id), isDp = !!INFLUENCES[id];
+    map.classList.add("active");
+    nodes.forEach(n => {
+      const on = n.dataset.id === id;
+      n.classList.toggle("hit", set.has(n.dataset.id)); n.classList.toggle("sel", on);
+      n.setAttribute("aria-pressed", String(on));
+    });
+    links.forEach(l => l.classList.toggle("hit", set.has(l.dataset.a) && set.has(l.dataset.b)));
+    picks.forEach(p => p.setAttribute("aria-pressed", String(p.dataset.pick === id)));
+    clear.hidden = false;
+
+    const left = el("div"), right = el("div");
+    left.append(el("p", INFO[id][0], "k"), el("h3", id), el("p", INFO[id][1]));
+    if (isDp) {
+      const frs = INFLUENCES[id];
+      right.append(el("p", "If you change this design parameter, test again:", "k"));
+      const ul = el("ul");
+      frs.forEach(fr => ul.append(el("li", fr + " with " + FR[fr].scenario)));
+      right.append(ul, el("p", frs.length > 1
+        ? "This DP changes both requirements. Set it first."
+        : "This DP changes one requirement. The other row stays as it is."));
+    } else {
+      right.append(el("p", "Trace", "k"), el("p", [...set].filter(x => x !== id).join(" · ")));
+    }
+    detail.replaceChildren(left, right);
+  }
+  nodes.forEach(n => {
+    const go = () => select(n.classList.contains("sel") ? null : n.dataset.id);
+    n.addEventListener("click", go);
+    n.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); go(); } });
+  });
+  picks.forEach(p => p.addEventListener("click", () => select(p.getAttribute("aria-pressed") === "true" ? null : p.dataset.pick)));
+  clear.addEventListener("click", () => select(null));
+  document.addEventListener("keydown", e => { if (e.key === "Escape") select(null); });
+
+  // Matrix cells: the reason for each entry, copied from the influence blocks.
+  const CELLS = [
+    ["material", "The digit rule decides which scans are accepted."],
+    ["none", "Adding a scan to the count does not change how many digits the scan has."],
+    ["material", "The count includes only accepted scans, so a change to the digit rule changes the count."],
+    ["material", "The counting rule decides the value of the returned count."]
+  ];
+  const why = document.getElementById("why"), cells = [...document.querySelectorAll("[data-cell]")];
+  cells.forEach(b => b.addEventListener("click", () => {
+    cells.forEach(c => c.setAttribute("aria-pressed", String(c === b)));
+    const [effect, text] = CELLS[+b.dataset.cell];
+    const k = el("p", "effect = " + effect + " · no reviewed support", "meta mono"); k.style.color = "var(--dark-muted)";
+    why.replaceChildren(k, el("p", text));
+  }));
+})();
+</script>
+</body>
+</html>

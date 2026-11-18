@@ -10,6 +10,8 @@ A thermostat with two root requirements, two design parameters, and explicit inf
 
 Command: `./bin/adhcl validate examples/minimal.ad.hcl`
 
+Diagram: `./bin/adhcl diagram -o minimal.html examples/minimal.ad.hcl`
+
 Expected exit code: 0.
 
 Expected warnings: `support_gap` for the influence claims, because the example has no reviewed support. The source profile also reports `incomplete_module_contract` and `missing_leaf_scenario` as warnings, because the example has no modules or scenarios.
@@ -20,6 +22,8 @@ A pallet batch counter with two root requirements, two design parameters, one mo
 
 Command: `./bin/adhcl validate --profile architecture examples/architecture.ad.hcl`
 
+Diagram: `./bin/adhcl diagram -o architecture.html examples/architecture.ad.hcl`. The committed `architecture-diagram.html` is generated with this command.
+
 Expected exit code: 0.
 
 Expected warnings: `support_gap` for the authored claims.
@@ -29,6 +33,8 @@ Expected warnings: `support_gap` for the authored claims.
 A badge gate in a project manifest. The manifest lists one core file, `design.ad.hcl`, and the three standard extensions. Each extension has one attachment.
 
 Command: `./bin/adhcl validate examples/project/model.ad.project.hcl`
+
+Diagram: `./bin/adhcl diagram -o project.html examples/project/model.ad.project.hcl`
 
 Command for the architecture profile: `./bin/adhcl validate --profile architecture examples/project/model.ad.project.hcl`
 

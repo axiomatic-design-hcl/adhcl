@@ -1,5 +1,7 @@
 package result
 
+import "slices"
+
 // Profile selects which severity column of the diagnostic catalog applies.
 type Profile string
 
@@ -107,4 +109,14 @@ func SeverityFor(code string, profile Profile) (Severity, bool) {
 	default:
 		return "", false
 	}
+}
+
+// Codes returns every diagnostic code of the catalog in sorted order.
+func Codes() []string {
+	codes := make([]string, 0, len(severityByCode))
+	for code := range severityByCode {
+		codes = append(codes, code)
+	}
+	slices.Sort(codes)
+	return codes
 }

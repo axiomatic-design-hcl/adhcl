@@ -17,7 +17,7 @@ func TestVersionWritesExactDevelopmentOutputWithoutValidation(t *testing.T) {
 	}
 
 	// When
-	code := Run([]string{"version"}, &stdout, &stderr, "", validate)
+	code := Run([]string{"version"}, &stdout, &stderr, "", validate, nil)
 
 	// Then
 	if code != 0 {
@@ -40,7 +40,7 @@ func TestVersionWritesExactInjectedOutputWithoutValidation(t *testing.T) {
 	}
 
 	// When
-	code := Run([]string{"version"}, &stdout, &stderr, "v0.1.0", validate)
+	code := Run([]string{"version"}, &stdout, &stderr, "v0.1.0", validate, nil)
 
 	// Then
 	if code != 0 {
@@ -62,7 +62,7 @@ func TestVersionOutputFailureReportsDeliveryFailure(t *testing.T) {
 	}
 
 	stdoutFailure := errors.New("stdout unavailable")
-	code := Run([]string{"version"}, failingWriter{err: stdoutFailure}, &stderr, "v0.1.0", validate)
+	code := Run([]string{"version"}, failingWriter{err: stdoutFailure}, &stderr, "v0.1.0", validate, nil)
 
 	// Then
 	if code != 1 {
@@ -81,7 +81,7 @@ func TestHelpOutputFailureReportsDeliveryFailureWithoutValidation(t *testing.T) 
 	}
 
 	stdoutFailure := errors.New("stdout unavailable")
-	code := Run([]string{"--help"}, failingWriter{err: stdoutFailure}, &stderr, "dev", validate)
+	code := Run([]string{"--help"}, failingWriter{err: stdoutFailure}, &stderr, "dev", validate, nil)
 
 	// Then
 	if code != 1 {
@@ -102,7 +102,7 @@ func TestValidationOutputFailureReportsDeliveryFailure(t *testing.T) {
 	}
 
 	// When
-	code := Run([]string{"validate", "design.ad.hcl"}, failingWriter{err: deliveryErr}, &stderr, "dev", validate)
+	code := Run([]string{"validate", "design.ad.hcl"}, failingWriter{err: deliveryErr}, &stderr, "dev", validate, nil)
 
 	// Then
 	if code != 1 {

@@ -62,3 +62,13 @@ type ScopeResult struct {
 	Order            []model.ID   // stable display order of DPs for uncoupled or decoupled scopes
 	Cycles           [][]model.ID // known material precedence cycles, members in authored order
 }
+
+// MasterScope returns the master assessment, or nil if it is absent.
+func MasterScope(scopes []ScopeResult) *ScopeResult {
+	for index := range scopes {
+		if scopes[index].Matrix.Scope == "master" {
+			return &scopes[index]
+		}
+	}
+	return nil
+}

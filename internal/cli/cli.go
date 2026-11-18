@@ -11,6 +11,7 @@ const (
 )
 
 type Request struct {
+	Output    string
 	Path      string
 	Profile   string
 	Candidate string
@@ -19,8 +20,9 @@ type Request struct {
 }
 
 type ValidateFunc func(Request, io.Writer) (int, error)
+type DiagramFunc func(Request, io.Writer, io.Writer) (int, error)
 
-func Run(args []string, stdout, stderr io.Writer, version string, validate ValidateFunc) int {
+func Run(args []string, stdout, stderr io.Writer, version string, validate ValidateFunc, diagram DiagramFunc) int {
 	if version == "" {
 		version = "dev"
 	}
@@ -46,6 +48,17 @@ func Run(args []string, stdout, stderr io.Writer, version string, validate Valid
 		}
 		return exitSuccess
 	}
+	if invocation.command == "diagram" {
+		if diagram == nil {
+			_ = writeText(stderr, "adhcl: diagram is unavailable\n")
+			return exitFailure
+		}
+		code, err := diagram(invocation.request, stdout, stderr)
+		if err != nil {
+			return reportDeliveryFailure(stderr, "diagram", err)
+		}
+		return code
+	}
 
 	if validate == nil {
 		_ = writeText(stderr, "adhcl: validation is unavailable\n")
@@ -62,16 +75,23 @@ func Run(args []string, stdout, stderr io.Writer, version string, validate Valid
 const helpText = `Usage:
   adhcl version
   adhcl validate [--profile source|architecture] [--candidate REF] [--context REF] [--] PATH
+  adhcl diagram [--profile source|architecture] [--candidate REF] [--context REF] [-o FILE|--output FILE] [--] PATH
 
 Commands:
   version    Show the tool version.
   validate   Validate a core file, core directory, or explicit manifest.
+  diagram    Render an assessed design as HTML.
 
 Validation options:
   --profile PROFILE   Select source or architecture.
   --candidate REF     Select a candidate reference.
   --context REF       Select a context reference.
   --help, -h          Show help.
+
+Diagram options:
+  -o, --output FILE   Write the diagram to a file.
+
+The diagram command also accepts the validation options.
 
 PATH is one .ad.hcl core file, a core directory, or an explicit manifest.
 `

@@ -4,6 +4,7 @@ import (
 	"github.com/axiomatic-design-hcl/adhcl/internal/assessment"
 	"github.com/axiomatic-design-hcl/adhcl/internal/owners"
 	"github.com/axiomatic-design-hcl/adhcl/internal/result"
+	"github.com/axiomatic-design-hcl/adhcl/internal/selection"
 )
 
 // Request selects the input, profile, and invocation-local snapshot.
@@ -27,7 +28,9 @@ type Result struct {
 	Scopes                                []assessment.ScopeResult
 	Candidates                            []assessment.CandidateResult
 	Owners                                []owners.OwnerResult
-	Unresolved                            []string
+	// Snapshot is nil when the core assessment is blocked.
+	Snapshot   *selection.Snapshot
+	Unresolved []string
 }
 
 // Failed reports operation failure, independent of process exit conventions.

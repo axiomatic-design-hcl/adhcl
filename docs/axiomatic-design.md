@@ -2,6 +2,8 @@
 
 This document helps maintainers design the Go tool before implementation. It defines the responsibilities and contracts for `version` and `validate`. The companion [implementation plan](plans/implementation-plan.md) defines the work and acceptance runs.
 
+The sections below preserve the v0.1.0 design baseline. The v0.2.0 diagram extension is described in [Diagram delivery](#diagram-delivery).
+
 ## Scope and evidence
 
 The user selected design and planning only for this task. No executable or Go implementation is claimed. The release target is v0.1.0.
@@ -192,9 +194,33 @@ Require the declared role, exact contract, and available registry label. Validat
 
 No external observation input or behavior resolver exists in the proposed v0.1.0 interface. Binding and behavior owners therefore report `unknown` with an unavailable-input cause. They must still fully assess payloads and subjects. Do not return fabricated matches or resolved targets.
 
-The view owner assesses its payload but does not render HTML during `validate`. HTML delivery is a separate operation outside this release. This boundary preserves validation of the initial view contract without adding another command.
+The view owner assesses its payload but does not render HTML during `validate`. The separate `diagram` operation renders HTML from the validation result; its tab order is fixed and does not use the view attachment layout.
 
 Unknown external evidence alone is not an operation failure. Invalid required attachments and failed owners are failures. Report composition separately from implementation conformance. A successful validation result does not establish a binding match or behavioral correspondence.
+
+### Diagram delivery
+
+FR0 delivers an HTML diagram. DP0 adds a command that reuses the validation pipeline. The proposed criteria and controls are:
+
+| FR | Outcome | DP |
+|---|---|---|
+| FR1 | Accept one valid request or report a usage error. | DP1 parses the diagram arguments. |
+| FR2 | Use the same assessment as validation. | DP2 exposes the selected snapshot and findings. |
+| FR3 | Show the declared records, assessed effects, and gaps. | DP3 builds the view model and trace map. |
+| FR4 | Present a self-contained, accessible page with one tab for each reader. | DP4 renders embedded HTML, CSS, and script. |
+| FR5 | Deliver the page or preserve the old file. | DP5 buffers output and replaces files after a complete render. |
+
+Rows are outcomes and columns are controls. This proposed influence model is not a proof of independence:
+
+| | DP1 | DP2 | DP3 | DP4 | DP5 |
+|---|---|---|---|---|---|
+| FR1 | X | 0 | 0 | 0 | 0 |
+| FR2 | X | X | 0 | 0 | 0 |
+| FR3 | 0 | X | X | 0 | 0 |
+| FR4 | 0 | 0 | X | X | 0 |
+| FR5 | X | 0 | 0 | 0 | X |
+
+DP1 selects the input and output. DP2 supplies the result read by DP3. DP4 reads the view model but does not derive findings. DP5 treats the rendered page as bytes. Under these conditions the model is decoupled: establish DP1, DP2, DP3, and DP4 in that order; DP5 depends on DP1. Shared process and output failures remain risks. The [diagram plan](plans/diagram-implementation-plan.md) records the scope and acceptance scenarios.
 
 ## Composition and change control
 

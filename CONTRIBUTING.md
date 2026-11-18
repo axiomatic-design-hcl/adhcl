@@ -19,10 +19,11 @@ Run `make verify` before you open a pull request. It runs these targets in this 
 5. `test-race` runs tests with the race detector.
 6. `staticcheck` runs Staticcheck at a pinned version.
 7. `vulncheck` runs the Go vulnerability checker at a pinned version.
-8. `validate-examples` builds the binary and validates the shipped examples.
-9. `release-tag-check` tests the stable semantic-version tag validator.
-10. `release-annotation-check` tests annotated-tag verification from a tagless checkout.
-11. `release-version-check` builds with a linker-injected version and checks that `adhcl version` prints `adhcl v0.1.0`.
+8. `validate-examples` builds the binary, validates the examples, and generates their diagrams.
+9. `diagram-example-check` compares the generated architecture diagram with the committed page.
+10. `release-tag-check` tests the stable semantic-version tag validator.
+11. `release-annotation-check` tests annotated-tag verification from a tagless checkout.
+12. `release-version-check` builds with a linker-injected version and checks that `adhcl version` prints `adhcl v0.2.0`.
 
 Run a single target when you change only part of the code. For example, run `make test` after a change to a single package.
 

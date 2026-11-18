@@ -27,6 +27,7 @@ func Run(request Request) Result {
 	rep.Scopes = core.scopes
 	rep.Owners = ownerResults
 	rep.Candidates = core.candidates
+	rep.Snapshot = core.snapshot
 	rep.Unresolved = unresolvedCauses(core.scopes, ownerResults, findings)
 	return rep
 }

@@ -45,7 +45,7 @@ func TestRunHelpDescribesTheRequestedCommand(t *testing.T) {
 			}
 
 			// When the command handles help.
-			code := Run(test.args, stdout, stderr, "test", validate)
+			code := Run(test.args, stdout, stderr, "test", validate, nil)
 
 			// Then help succeeds on stdout and describes the requested command contract.
 			if code != 0 {
@@ -60,6 +60,21 @@ func TestRunHelpDescribesTheRequestedCommand(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestHelpSeparatesDiagramOutputOption(t *testing.T) {
+	var stdout, stderr bytes.Buffer
+	if code := Run([]string{"--help"}, &stdout, &stderr, "test", nil, nil); code != 0 {
+		t.Fatalf("Run() = %d, stderr = %q", code, stderr.String())
+	}
+	validation, diagram, found := strings.Cut(stdout.String(), "Diagram options:")
+	if !found || !strings.Contains(diagram, "-o, --output FILE") {
+		t.Fatalf("diagram options missing output flag: %q", stdout.String())
+	}
+	_, validationOptions, found := strings.Cut(validation, "Validation options:")
+	if !found || strings.Contains(validationOptions, "--output") {
+		t.Fatalf("validation options include output flag: %q", stdout.String())
 	}
 }
 
@@ -100,7 +115,7 @@ func TestRunRejectsInvalidUsageBeforeValidation(t *testing.T) {
 			}
 
 			// When the command handles the arguments.
-			code := Run(test.args, stdout, stderr, "test", validate)
+			code := Run(test.args, stdout, stderr, "test", validate, nil)
 
 			// Then usage fails with code 2 and writes its error to stderr.
 			if code != 2 {
