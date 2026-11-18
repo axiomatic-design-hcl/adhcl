@@ -2,6 +2,16 @@
 
 All notable changes to this project are documented in this file. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## v0.2.1
+
+### Changed
+
+- Building from source now requires Go 1.26 or later. CI verifies against Go 1.26.x and 1.27.x instead of the unsupported Go 1.25 series.
+
+### Security
+
+- Use Go 1.26.9 or later to build binaries with fixes for the `html/template` vulnerabilities GO-2026-6599 and GO-2026-6600. Go 1.25 has no fixes for these vulnerabilities. The release toolchain is Go 1.26.11.
+
 ## v0.2.0
 
 ### Added

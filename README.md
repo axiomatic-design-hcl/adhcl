@@ -6,7 +6,7 @@ Use adhcl to check that a design file parses, resolves, and passes the core asse
 
 ## Requirements
 
-Build adhcl with Go 1.26 or later. The `go.mod` file names `go1.26.11` as the toolchain. CI tests with Go 1.26.x and 1.27.x.
+Build adhcl with Go 1.26 or later. Use Go 1.26.9 or later to include fixes for the `html/template` vulnerabilities GO-2026-6599 and GO-2026-6600. The `go.mod` file names `go1.26.11` as the toolchain. CI tests with Go 1.26.x and 1.27.x.
 
 ## Build
 
