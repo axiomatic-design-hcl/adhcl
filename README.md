@@ -8,6 +8,16 @@ Use adhcl to check that a design file parses, resolves, and passes the core asse
 
 Build adhcl with Go 1.26 or later. Use Go 1.26.9 or later to include fixes for the `html/template` vulnerabilities GO-2026-6599 and GO-2026-6600. The `go.mod` file names `go1.26.11` as the toolchain. CI tests with Go 1.26.x and 1.27.x.
 
+## Install
+
+Install the latest release with Go:
+
+```sh
+go install github.com/axiomatic-design-hcl/adhcl/cmd/adhcl@latest
+```
+
+Go installs `adhcl` in `GOBIN`, or in `GOPATH/bin` if `GOBIN` is not set. Add that directory to your `PATH` to run `adhcl` from your terminal.
+
 ## Build
 
 Run `make build` from the repository root. The command writes the binary to `bin/adhcl`.
