@@ -2,7 +2,7 @@
 
 This plan adds fourteen systems engineering diagrams to the page that `adhcl diagram` writes. Each diagram uses only facts that the current `.ad.hcl` language already holds. The plan changes no language rule.
 
-Status: proposed. No step is started.
+Status: proposed. No step is started. The plan has three parts: a [review of the current page](#review-of-the-current-page) with fixes, the [new diagrams](#diagrams), and an [integration guide](#integration-guide) for adding them to the page.
 
 ## Terms
 
@@ -63,6 +63,66 @@ These facts come from the current code:
 
 The [diagram implementation plan](diagram-implementation-plan.md) set the rules for the page. This plan keeps all of them.
 
+## Review of the current page
+
+Fix the current page before you add diagrams. The new diagrams reuse its matrix layout, its tables, and its map. Each defect below would spread to them.
+
+### Method
+
+The review used adhcl at commit `2709d45`, built with `make build`. These commands generated the pages:
+
+```sh
+adhcl diagram examples/minimal.ad.hcl
+adhcl diagram examples/architecture.ad.hcl
+adhcl diagram examples/project/model.ad.project.hcl
+adhcl diagram ../spec/examples/requirements_hcl.ad.hcl
+```
+
+The last model is the largest available input: 12 DPs, 9 leaf FRs, and a 9 × 9 master matrix. Each page opened in Chromium through Playwright at 1280 × 900 and at 390 × 844. Each tab was captured as a full-page screenshot. A script compared the document width with the viewport and read the computed styles. No page had a script error or a console error. `examples/architecture-diagram.html` equals the generated output.
+
+The review applied Nielsen's ten heuristics, Krug's trunk test, WCAG 2.2 AA, and the consistency checks of the `refactoring-ui` skill. Severity uses Nielsen's scale: 4 blocks a task or breaks a stated constraint, 3 is a major problem, 2 is a minor problem, and 1 is cosmetic.
+
+### What works
+
+Keep these properties. The new diagrams must have them too.
+
+- The page is one file with no network load. The same input gives the same bytes.
+- The five claim labels (Source, Inferred, adhcl, Derived, Not in source) differ by shape as well as by color.
+- The start tab passes the trunk test. It names the design, the tabs, and the reader of each tab.
+- The matrices never show an unknown as `0`. A hatched `?` cell is easy to tell from a `0` cell.
+- Each tab works without JavaScript, and each record has one home row.
+
+### Findings
+
+| ID | Issue | Evidence | Heuristic or rule | Severity | Fix | Status |
+|---|---|---|---|---|---|---|
+| R1 | A wide matrix pushes the architecture tab wider than the screen. | Self-design page: document width 900 px at a 390 px viewport, and 1300 px at a 1280 px viewport. The text column beside the master matrix is 550 px wide and outside any scroll region. On desktop it shrinks to one word per line. | WCAG 1.4.10 Reflow (AA), plan constraint C9 | 4 | Stack `.mx` into one column. Put the classification, the meaning, and the design order above the matrix, and let only the matrix table scroll. Add a test that the document width is at most the viewport width at 390 px for every tab. | Open |
+| R2 | When a DP is selected on the trace map, the other boxes have too little contrast to read. | `.active .node:not(.hit){opacity:.3}` leaves the text at about 2:1 against `#141413`. | WCAG 1.4.3 Contrast (AA) | 4 | Keep the text at 4.5:1 or more. Mark boxes outside the impact with a muted, dashed border instead of opacity, and keep opacity only for edges. | Open |
+| R3 | The influence lines on the trace map cannot be read with more than about 8 leaf FRs. | Self-design map: dozens of dashed curves and `?` labels in the 35-unit gap between the FR column and the DP column. | Aesthetic and minimalist design, recognition rather than recall | 3 | Draw influence edges only for the selected DP, both with and without the script, using `DefaultImpact` when the script is off. Show the full cross-effect picture in the new DSM (D2) instead of on the map. | Open |
+| R4 | Wide tables cut off columns with no sign that more exists. | At 1280 px: "Scenarios to run again" in change impact and "Realized by" in the DP table are cut. At 390 px: the DP table shows three of nine columns. | Visibility of system status | 3 | Add a scroll shadow on the right edge of `.scroll` with pure CSS (`background-attachment: local`). Make the ID column sticky. Let the mono header labels wrap. At less than 720 px, show list rows as stacked cards. | Open |
+| R5 | Tabs on a phone cut off the active tab with no scroll cue. | At 390 px the bar ends in "Arc" for the architecture tab. | Visibility of system status, trunk test ("Where am I?") | 2 | Scroll the active tab into view on route. Add an edge fade. Below 480 px, wrap the tabs into two rows. | Open |
+| R6 | Some cells show two gap labels for one fact. | PV and "Realized by" cells show a "Not in source" tag and the word "None". | Consistency and standards | 2 | Show one gap tag with the text inside it. Use this one gap form on every tab and in every new diagram. | Open |
+| R7 | Map boxes for modules show only a cut ID. | `module.candidate_selec…` with an empty body. | Recognition rather than recall | 2 | Wrap the ID onto two lines before cutting text. Fill the body with the DPs that the module realizes. | Open |
+| R8 | The impact detail panel lists IDs as plain text. | The text of `#detail` after a DP is selected. | Consistency with the rule that every mention links to its home row | 2 | Build the links in the script from the `Ref` anchors, or render one hidden detail block for each DP in the template and show the selected one. The second option needs no markup in the script. | Open |
+| R9 | "Reasons for each cell" looks like a heading, not a control. | 18 px summary text with no marker beside a 14 px explanation. | Affordance, consistency | 2 | Give the summary a marker and a count, for example "Show 20 cell reasons". Use the body text size. | Open |
+| R10 | The start tab does not say what the reader should do first. | Self-design: 50 warnings and an unresolved top level, but the first thing on the page is the view cards. | Steps to value; the "One Thing" check of the `steve-jobs-design-review` skill | 1 | Above the view cards, show one sentence that gives the top open item and links to it, for example "The top-level matrix is unresolved: 2 cells are unknown." The tool already derives this in `openItems`. | Open |
+| R11 | The guide tab is 4,000 to 6,300 px tall with no index. | Screenshot heights | Help and documentation | 1 | Add an "On this tab" bar, as the other tabs have. | Open |
+
+R1 and R2 break constraint C9 of the first diagram plan. Fix them before any release that claims WCAG 2.2 AA.
+
+### Cut list
+
+These cuts make the page smaller. None of them removes a fact.
+
+- Show influence edges on the trace map for the selected DP only (R3). The DSM shows them all.
+- Do not repeat a matrix in full on a second tab. Link to its home instead. See the [integration guide](#integration-guide).
+
+### Tests to add
+
+- A Playwright check in `cmd/adhcl/diagram_acceptance_test.go`, or a Go test that runs a headless browser when one is available. It checks that no tab is wider than the viewport at 390 px and at 1280 px, on the architecture example and on the self-design example. If no browser is available, the test is skipped and says so. It never passes without running.
+- A contrast check on the computed colors of map text in the selected state.
+- A unit test that each gap cell renders one tag (R6).
+
 ## Command contract
 
 The command line does not change:
@@ -97,7 +157,7 @@ The constraints of the first diagram plan still apply. These matter most for thi
 
 ### Placement
 
-Add one tab, "Systems engineering", with the ID `systems`. Put it after "Risks and evidence" and before "Guide". The tab has one section for each diagram, in the order D1 to D14. An "On this tab" bar links to each section.
+Add one tab, "Systems engineering", with the ID `systems`. Put it after "Risks and evidence" and before "Guide". The tab opens with an index of all fourteen diagrams. D1, D6, D11, and D14 extend existing views on other tabs, and their index cards link there. The other ten diagrams have a section on the new tab. The [integration guide](#integration-guide) gives the details.
 
 The new tab reuses records. It does not create new home rows. Each mention of a record links to its home row on the existing tabs, as on every other tab.
 
@@ -154,7 +214,7 @@ A `grid` table. Order the rows and columns by the design order when the scope ha
 
 #### Gaps and limits
 
-If there is no master scope, show "The tool has no master matrix." The matrix equals the master matrix on the architecture tab. The SE tab presents it with SE terms and does not compute it again.
+If there is no master scope, show "The tool has no master matrix." D1 is the master matrix on the architecture tab, which gets the SE name and this "About" block. The SE tab links to it and does not draw it again.
 
 #### Tests
 
@@ -601,6 +661,91 @@ An unresolved scope shows a junction with "?" and links to its cause. It does no
 - An unresolved scope shows "?".
 - A DP with no module shows a dashed box with its DP ID.
 
+## Integration guide
+
+This guide says how each new diagram joins the page. Follow it for every diagram, so that the page stays one system and not fourteen added parts.
+
+### Rule 1: extend before you add
+
+Four of the new diagrams show data that the page already shows. Extend the existing view in place. Do not draw a second copy.
+
+| New diagram | Existing view | Integration |
+|---|---|---|
+| D1 Domain mapping matrix | Master matrix on the architecture tab | Add the SE name "Domain mapping matrix (DMM)" and the "About" block to the master matrix. The SE tab shows an index card that links to it. |
+| D6 Requirements traceability matrix | Trace table on the trace tab | Keep the trace table, one row for each leaf FR. Add D6 as a second view of the same section, with one row for each criterion. Two buttons switch between the views. Without the script, both views show, one after the other. |
+| D11 Change propagation matrix | Change impact table on the trace tab | Add the matrix form above the table, and the scenario comparison below it. Both read the same `assessment.Impact` values as the table and the map. |
+| D14 Module junction diagram | Module junctions table on the engineering tab | Add the SVG above the existing table. The table becomes its text form, as C10 requires. |
+
+The other ten diagrams are new views. They live on the SE tab. This changes the default of decision Q6 to "link".
+
+### Rule 2: one tab, one index, many homes
+
+- Add `tabSystems = "systems"` to `presentation.go`. Put it before `tabGuide` in `tabDefinitions`. Set `Reader` to "Systems engineer, tester, reviewer" and `Question` to "Which standard SE diagrams describe this design?". Fill `Has` with the number of diagrams that have data, for example "11 of 14 diagrams have data".
+- The tab opens with an index of fourteen cards. Use the `.views` grid and `.view` card from the start tab. Each card shows the diagram number, its SE name, its main reader, and one line from "What it is". The four cards from rule 1 link to their homes on the other tabs. The other cards link to sections on this tab.
+- Add the template `assets/tab_systems.tmpl` and include it in `page.html.tmpl` before `tab_guide.tmpl`. In each template, find tabs by ID, not by position. The current `index .Tabs 3` lookups break when a tab is inserted. Replace them with a `tab "architecture"` template function, and change that in the same step.
+- Give each section the anchor `se-dN`, for example `se-d2`. Keep the existing anchors. `TestPageLinksResolve` must also cover the new anchors.
+
+### Rule 3: one "About" block, everywhere
+
+- Render "About this diagram" with the shared `about` template. Put it between the section heading and the diagram, collapsed after the first visit of the tab. Use `<details>`, open by default, so that the page stays readable without the script.
+- Use the same three `<h4>` headings in every block: "What it is", "How to use it", and "Who reads it". Keep the text in `systems_text.go`. Do not put text in the templates.
+- The four extended views from rule 1 get the same block. So each of the fourteen diagrams has its explanation wherever it lives.
+
+### Rule 4: reuse the design tokens
+
+- Use only the existing CSS custom properties: `--paper`, `--panel`, `--ink`, `--muted`, `--line`, `--clay`, `--clay-light`, `--clay-wash`, and `--dark-line`. Add no new color. Clay marks only the selection, cross effects, and focus, as it does today.
+- Matrix cells use the existing classes: `x`, `x off`, `zero`, and `unk`. Symbols that the new diagrams add (`V` verify, `R` realize, `O` own, `D` depend, `C` contain, `A` affected) use the `x` style. Their meaning goes in a legend line under each diagram, not in a new color.
+- SVG drawings use the classes of the trace map: `.node`, `.edge`, `.edge.influence`, and `.map-label`. Draw SVG drawings on the ivory background, not the dark band, unless the drawing is interactive. Only the trace map uses the dark band today. Keep it as the one feature band of the page.
+- Use the spacing steps 4, 8, 12, 16, 24, and 32 px, and the type sizes 12, 14, 16, 20, 24, and 32 px.
+
+### Rule 5: shared components first
+
+Build these before the first diagram. Fix the matching review findings in them, so that the new diagrams get the fixes for free:
+
+| Component | File | Also fixes |
+|---|---|---|
+| `GridMatrix` and the `grid` template, explanation above the table and a scroll shadow | `matrix.go`, `page.html.tmpl` | R1, R4, R9 |
+| One gap form, `{{gap "None"}}`, with no second word | `render.go` | R6 |
+| Box text wrapping that keeps the full ID | `layout.go` (`wrap`) | R7 |
+| Tree and graph layout | `layout_tree.go`, `layout_graph.go` | Reuses the R7 wrapping |
+| Size guard with `<details>` parts | `systems.go` | R3, for large models |
+
+Then move the existing architecture matrices to `GridMatrix`. The architecture tab then proves the component before any new diagram uses it.
+
+### Rule 6: interaction stays optional
+
+- No new diagram needs JavaScript to show its data.
+- If a diagram has a selection, it reuses the `impact-data` JSON block and the `select` function. Do not add a second data block. D2 and D11 can highlight the row of the DP selected on the trace map. The selection is kept in the URL hash, for example `#se-d2?dp=dp.x`.
+- The script only adds and removes classes and copies prepared text, as today. It computes no design value (C1).
+
+### Rule 7: the legend and the guide grow together
+
+- Add each new symbol to the page legend in the footer only when the page uses it.
+- Add one guide entry for each SE term: DMM, DSM, MDM, N² chart, RTM, VCRM, MoE, MoP, and junction. Link each "About" block to its guide entry.
+- Add one line to the start tab's "Choose a view" grid for the SE tab, as for every other tab.
+
+### Rule 8: protect the bytes and the build
+
+- Keep each slice in authored or derived order. Do not iterate over a map (C3).
+- Regenerate `examples/architecture-diagram.html` in the same commit as each template change. `make diagram-example-check` must pass on every commit.
+- Measure the page size of the self-design example before and after. It is 266 KB today. Record the new size in the handoff. If the page grows by more than 50%, collapse the SE sections by default.
+
+### Integration checklist for one diagram
+
+Copy this list into the pull request of each diagram:
+
+- [ ] The builder is a pure function in `internal/diagram`, with a test written first.
+- [ ] The view model field is on `Page.Systems`, or on the existing view that rule 1 names.
+- [ ] The section has the anchor `se-dN` and an index card.
+- [ ] The "About" block has all three parts, with text from `systems_text.go`.
+- [ ] Every mention of a record is a `Ref` that links to its home row.
+- [ ] Empty data shows one gap card. Unknown cells show `?`.
+- [ ] Each SVG has a table or a list with the same data.
+- [ ] No tab is wider than the viewport at 390 px and at 1280 px.
+- [ ] Text contrast is 4.5:1 or more in every state.
+- [ ] The legend and the guide have the new symbols and terms.
+- [ ] The committed example page is regenerated, and `make verify` passes.
+
 ## Fixtures
 
 The current examples do not use every field that these diagrams read. Add one fixture, `internal/diagram/testdata/systems.ad.hcl`. Keep it small, with about 12 FRs. It must contain:
@@ -619,8 +764,9 @@ Run `adhcl validate` on the fixture under the source profile before you use it. 
 
 | Step | Work | Diagrams | Completion gate |
 |---|---|---|---|
+| 0 | Fix the review findings R1 to R11, with R1 and R2 first | Existing page | The layout test passes at 390 px and 1280 px on both examples. Map text has a contrast of 4.5:1 or more in every state. |
 | 1 | Add the fixture | All | `validate` runs on it, and the test records its findings. |
-| 2 | Add the tab, `About`, `GridMatrix`, the `about` and `grid` templates, and the size guard | All | The new tab renders with fourteen empty sections, each with its full "About" part. A test checks that each `About` has three non-empty parts. |
+| 2 | Add the tab, the index, `About`, `GridMatrix`, the `about` and `grid` templates, and the size guard. Look up tabs by ID. Move the architecture matrices to `GridMatrix`. | All | The new tab renders with fourteen index cards and ten empty sections, each with its full "About" part. A test checks that each `About` has three non-empty parts. The architecture tab looks the same as before, apart from the R1 fix. |
 | 3 | Add the matrix diagrams | D1, D2, D3, D7, D8, D10, D11 | Each test in the diagram section passes. Each mark traces to one source fact. |
 | 4 | Add the table diagrams | D6, D12 | Each test in the diagram section passes. |
 | 5 | Add the tree layout and the tree diagrams | D5, D9, D13 | No boxes overlap. Each SVG has a list with the same IDs. |
@@ -628,7 +774,7 @@ Run `adhcl validate` on the fixture under the source profile before you use it. 
 | 7 | Check the page | All | The page for each example and for the fixture opens with no browser error. An automated scan finds no WCAG AA failure. Two runs give equal bytes. |
 | 8 | Update documents and examples | All | The documents describe observed output. |
 
-Step 2 must come first. Steps 3 to 6 are independent of each other, because no diagram builder reads another one. Step 7 needs steps 3 to 6.
+Step 0 comes first, because steps 2 to 6 reuse the fixed components. Step 2 comes next. Steps 3 to 6 are independent of each other, because no diagram builder reads another one. Step 7 needs steps 3 to 6.
 
 Write each test before the code, as `CONTRIBUTING.md` requires. Use `// Given`, `// When`, and `// Then` comments.
 
@@ -638,9 +784,9 @@ Add these cases to `cmd/adhcl/diagram_acceptance_test.go`. Each case runs the bu
 
 | Scenario | Input | Required outcome |
 |---|---|---|
-| S1 | `diagram examples/architecture.ad.hcl` | Exit code 0. The page has the `systems` tab with fourteen sections in order. |
-| S2 | Each section on the S1 page | Each section has the three headings "What it is", "How to use it", and "Who reads it". |
-| S3 | The fixture | D1 equals the master matrix on the architecture tab. D14 equals the engineering junctions. D11 equals the trace impact list. |
+| S1 | `diagram examples/architecture.ad.hcl` | Exit code 0. The page has the `systems` tab with fourteen index cards in order. Each card links to an anchor that exists. |
+| S2 | Each of the fourteen diagrams on the S1 page, on any tab | Each diagram has the three headings "What it is", "How to use it", and "Who reads it". |
+| S3 | The fixture | No matrix is drawn twice. D11 and the change impact table read the same impact sets. D14 and the junction table give the same junction for each scope. |
 | S4 | The fixture with `--candidate` set to the second candidate | D1, D2, D11, and D12 follow the selected candidate. |
 | S5 | `examples/minimal.ad.hcl` | Each diagram without data shows its "Not in source" card. No section is missing. |
 | S6 | A statement with `<script>` and a quote, used in D4, D5, D9, and D13 | The text is escaped in each SVG and table. |
@@ -668,7 +814,8 @@ Each decision has a default. The plan uses the default until the owner selects a
 | Q3 | The D11 comparison of change scenarios with the matrix | A Derived view on the page only | A new assessment finding, which needs a diagnostic code in the spec repository |
 | Q4 | Size guard limits | 40 rows, 40 columns, 120 nodes | Other limits after the S8 run |
 | Q5 | Relation names in D4 | SysML names in angle quotes | Plain English names such as "verifies" |
-| Q6 | Whether D1 repeats the master matrix | Repeat it with SE terms | Link to the architecture tab instead |
+| Q6 | Whether D1, D6, D11, and D14 repeat existing views on the SE tab | Link to them, and extend them in place. See the integration guide, rule 1. | Repeat them in full on the SE tab |
+| Q7 | Whether the review fixes ship before the diagrams | Yes. R1 and R2 break the WCAG 2.2 AA constraint. | Ship them in the same release as the diagrams |
 
 ## Outside this plan
 
